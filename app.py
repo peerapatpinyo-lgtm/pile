@@ -6,37 +6,50 @@ import matplotlib.pyplot as plt
 # 1. Engineering Calculation Core
 # ==========================================
 def calculate_pile_deviation(pw, mx_ext, my_ext, q_ult, fs, piles_df):
+    """
+    Calculates individual pile reactions using the Rigid Pile Cap Method (Elastic Analysis).
+    Verifies the results against the allowable safe pile capacity derived from FS.
+    """
     piles = piles_df.to_dict('records')
     n = len(piles)
     
     if n == 0:
         return None, None
 
-    # คำนวณ Safe Load จาก FS
+    # Calculate Allowable Safe Load Capacity
     safe_load = q_ult / fs
 
+    # Pre-processing: Compute actual coordinates from design + deviation
     for p in piles:
         p['x_actual'] = p['x_design'] + p['dev_x']
         p['y_actual'] = p['y_design'] + p['dev_y']
 
+    # Step 1: Compute New Center of Gravity (CG) of the pile group
     cg_x = sum(p['x_actual'] for p in piles) / n
     cg_y = sum(p['y_actual'] for p in piles) / n
 
+    # Step 2: Compute Eccentricities & Total Eccentric Moments about the new CG
+    # Note: Eccentricity from center of column (0,0) to the new pile group CG
+    # Mx is a moment about X-axis, caused by load eccentricity along Y-axis (cg_y)
+    # My is a moment about Y-axis, caused by load eccentricity along X-axis (cg_x)
     ecc_mx = pw * cg_y
     ecc_my = pw * cg_x
+    
     mx_cg = mx_ext + ecc_mx
     my_cg = my_ext + ecc_my
 
+    # Step 3: Compute Pile Coordinates relative to New CG and Group Moments of Inertia
     ixx = 0
     iyy = 0
     for p in piles:
-        p['x_i'] = p['x_actual'] - cg_x
-        p['y_i'] = p['y_actual'] - cg_y
+        p['x_i'] = p['x_actual'] - cg_x  # perpendicular distance to Y-axis
+        p['y_i'] = p['y_actual'] - cg_y  # perpendicular distance to X-axis
         p['x_i_sq'] = p['x_i'] ** 2
         p['y_i_sq'] = p['y_i'] ** 2
-        ixx += p['y_i_sq']
-        iyy += p['x_i_sq']
+        ixx += p['y_i_sq']  # Inertia about X-axis is sum of (y_i)^2
+        iyy += p['x_i_sq']  # Inertia about Y-axis is sum of (x_i)^2
 
+    # Step 4: Compute Pile Reactions (Ri) & Validate Safety Status
     overall_passed = True
     for p in piles:
         term1 = pw / n
@@ -44,7 +57,7 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_ult, fs, piles_df):
         term3 = (my_cg * p['x_i']) / iyy if iyy != 0 else 0
         p['Ri'] = term1 + term2 + term3
         
-        # Safety Evaluation (ใช้ Safe Load ที่หาร FS แล้ว)
+        # Safety Evaluation
         if p['Ri'] > safe_load:
             p['Status'] = 'FAIL (Overload)'
             overall_passed = False
@@ -66,29 +79,31 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_ult, fs, piles_df):
 # ==========================================
 # 2. Streamlit UI and Output Rendering
 # ==========================================
-st.set_page_config(page_title="Pile Deviation & Safety Analysis", layout="wide")
+st.set_page_config(page_title="Advanced Pile Deviation Analysis", layout="wide")
 
-st.title("🏗️ Pile Deviation & Safety Analysis Report")
-st.markdown("Calculate individual pile reactions with **Working Loads** and verify against safe capacity using a **Factor of Safety (FS)**.")
+st.title("🏗️ Pile Deviation Analysis & Detailed Calculation Report")
+st.markdown("Professional engineering tool for calculating individual pile reactions with an **Advanced Verification & High-Precision Calculation Sheet**.")
 
 st.divider()
 
 # --- Input Section ---
-st.subheader("1. Design Loads (Working Stress) & Pile Capacity")
+st.subheader("1. Design Parameters Input")
 col_p, col_mx, col_my = st.columns(3)
-pw_input = col_p.number_input("Total Working Axial Load (Pw) - [Tons]", value=100.0, step=10.0, help="DL + LL (Unfactored)")
-mx_input = col_mx.number_input("Working Moment Mx - [Ton-m]", value=0.0, step=1.0)
-my_input = col_my.number_input("Working Moment My - [Ton-m]", value=0.0, step=1.0)
+pw_input = col_p.number_input("Total Working Axial Load (Pw) - [Tons]", value=100.0, step=10.0, help="Unfactored Dead Load + Live Load (DL + LL)")
+mx_input = col_mx.number_input("External Working Moment Mx - [Ton-m]", value=0.0, step=1.0, help="External moment applied about X-axis")
+my_input = col_my.number_input("External Working Moment My - [Ton-m]", value=0.0, step=1.0, help="External moment applied about Y-axis")
 
 col_qult, col_fs, col_safe = st.columns(3)
-qult_input = col_qult.number_input("Ultimate Pile Capacity (Q_ult) - [Tons]", value=75.0, step=5.0)
-fs_input = col_fs.number_input("Factor of Safety (FS)", value=2.5, step=0.1)
+qult_input = col_qult.number_input("Ultimate Pile Capacity (Q_ult) - [Tons]", value=75.0, step=5.0, help="Ultimate geotechnical pile capacity")
+fs_input = col_fs.number_input("Factor of Safety (FS)", value=2.5, step=0.1, help="Standard geotechnical safety factor (typically 2.5 - 3.0)")
 
-# แสดงค่า Safe load แบบ Real-time ให้ผู้ใช้เห็น
 calculated_safe_load = qult_input / fs_input if fs_input > 0 else 0
-col_safe.info(f"🛡️ **Safe Load Capacity:** {calculated_safe_load:.2f} Tons")
+col_safe.info(f"🛡️ **Calculated Safe Pile Capacity:** {calculated_safe_load:.3f} Tons")
 
-st.subheader("2. Pile Coordinates & Deviations")
+st.subheader("2. Pile Coordinates & Construction Deviations")
+st.caption("💡 Input the Design Coordinates and the Deviation (offset) measured at the site. The system computes coordinates automatically. All units are in **Meters (m)**.")
+
+# Default Data (F4 Foundation Setup)
 default_data = pd.DataFrame({
     'Pile_Name': ['P1', 'P2', 'P3', 'P4'],
     'x_design': [-0.50, 0.50, -0.50, 0.50],
@@ -102,49 +117,80 @@ edited_df = st.data_editor(default_data, num_rows="dynamic", use_container_width
 st.divider()
 
 # --- Calculation & Results Section ---
-if st.button("🧮 Calculate & Verify Safety Status", type="primary"):
+if st.button("🧮 Calculate & Generate High-Detail Report", type="primary"):
     
     df_res, summary = calculate_pile_deviation(pw_input, mx_input, my_input, qult_input, fs_input, edited_df)
     
     if df_res is not None:
         
+        # VISUAL STATUS BADGE
         st.subheader("🛡️ Safety Verification Status")
         if summary['overall_passed']:
-            st.success(f"🟢 **PASSED** - All piles are safe. Maximum pile reaction $\le$ Safe Load ({summary['safe_load']:.2f} Tons).")
+            st.success(f"🟢 **PASSED** - Structural safety requirements met. All individual pile reactions are within the allowable safe capacity ($\le$ {summary['safe_load']:.3f} Tons).")
         else:
-            st.error(f"🔴 **FAILED (OVERLOADED)** - Critical Alert! One or more piles have exceeded the Safe Load ({summary['safe_load']:.2f} Tons).")
+            st.error(f"🔴 **FAILED (OVERLOADED)** - Design criteria breached! One or more piles have exceeded the allowable safe capacity ({summary['safe_load']:.3f} Tons). Structural intervention required.")
 
         st.divider()
 
-        with st.expander("📝 View Step-by-Step Calculation Sheet", expanded=False):
-            st.markdown("### Step 1: Pile Safe Capacity Calculation")
-            st.markdown(rf"$$ \text{{Safe Load}} = \frac{{Q_{{ult}}}}{{FS}} = \frac{{{summary['q_ult']}}}{{{summary['fs']}}} = {summary['safe_load']:.3f} \text{{ Tons}} $$")
+        # HIGH-DETAIL CALCULATION SHEET
+        with st.expander("📝 View Comprehensive Step-by-Step Calculation Sheet", expanded=True):
+            
+            st.markdown("### Step 1: Geotechnical Allowable Pile Capacity ($R_{allow}$)")
+            st.markdown("The safe load capacity is derived by dividing the ultimate capacity by the factor of safety:")
+            st.markdown(rf"$$ R_{{allow}} = \frac{{Q_{{ult}}}}{{FS}} = \frac{{{summary['q_ult']:.3f}}}{{{summary['fs']:.1f}}} = {summary['safe_load']:.3f} \text{{ Tons}} $$")
 
-            st.markdown("### Step 2: New Center of Gravity (CG)")
-            st.markdown(rf"$$ \bar{{x}} = \frac{{\sum x_{{actual}}}}{{n}} = {summary['cg_x']:.4f} \text{{ m}}, \quad \bar{{y}} = \frac{{\sum y_{{actual}}}}{{n}} = {summary['cg_y']:.4f} \text{{ m}} $$")
+            st.markdown("### Step 2: Pre-processing & Actual Coordinates Estimation")
+            st.markdown("Actual on-site coordinates are determined by adding structural deviations ($\Delta x, \Delta y$) to the initial design coordinates:")
+            st.markdown(r"$$ x_{{actual}} = x_{{design}} + \text{{dev\_x}}, \quad y_{{actual}} = y_{{design}} + \text{{dev\_y}} $$")
             
-            st.markdown("### Step 3: Total Eccentric Moments ($M_{x,cg}, M_{y,cg}$)")
-            st.markdown(rf"$$ M_{{x,cg}} = M_{{x,ext}} + (P_w \cdot \bar{{y}}) = {summary['mx_ext']} + ({summary['pw']} \cdot {summary['cg_y']:.4f}) = {summary['mx_cg']:.4f} \text{{ Ton-m}} $$")
-            st.markdown(rf"$$ M_{{y,cg}} = M_{{y,ext}} + (P_w \cdot \bar{{x}}) = {summary['my_ext']} + ({summary['pw']} \cdot {summary['cg_x']:.4f}) = {summary['my_cg']:.4f} \text{{ Ton-m}} $$")
+            df_actuals = df_res[['Pile_Name', 'x_design', 'dev_x', 'x_actual', 'y_design', 'dev_y', 'y_actual']].copy()
+            st.table(df_actuals.style.format({col: '{:.4f}' for col in df_actuals.columns if col != 'Pile_Name'}))
 
-            st.markdown("### Step 4: Group Moment of Inertia ($I_{xx}, I_{yy}$)")
-            st.markdown(rf"$$ I_{{xx}} = \sum (y_i)^2 = {summary['ixx']:.4f} \text{{ m}}^2, \quad I_{{yy}} = \sum (x_i)^2 = {summary['iyy']:.4f} \text{{ m}}^2 $$")
+            st.markdown("### Step 3: Shifted Center of Gravity (CG) of the Group")
+            st.markdown("The global centroid shifts due to construction placement deviations:")
+            st.markdown(rf"$$ \bar{{x}} = \frac{{\sum x_{{actual}}}}{{n}} = \frac{{{df_res['x_actual'].sum():.4f}}}{{{summary['n']}}} = {summary['cg_x']:.4f} \text{{ m}} $$")
+            st.markdown(rf"$$ \bar{{y}} = \frac{{\sum y_{{actual}}}}{{n}} = \frac{{{df_res['y_actual'].sum():.4f}}}{{{summary['n']}}} = {summary['cg_y']:.4f} \text{{ m}} $$")
             
-            st.markdown("### Step 5: Individual Pile Reactions & Safety Check")
-            st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} \le \text{Safe Load} $$")
+            st.markdown("### Step 4: Total Eccentric Moments about New Centroid ($M_{x,cg}, M_{y,cg}$)")
+            st.markdown("Moments induced due to the combined action of external moments and load eccentricities relative to the new group CG:")
+            st.markdown(rf"$$ M_{{x,cg}} = M_{{x,ext}} + (P_w \cdot \bar{{y}}) = {summary['mx_ext']:.3f} + ({summary['pw']:.3f} \cdot {summary['cg_y']:.4f}) = {summary['mx_cg']:.4f} \text{{ Ton-m}} $$")
+            st.markdown(rf"$$ M_{{y,cg}} = M_{{y,ext}} + (P_w \cdot \bar{{x}}) = {summary['my_ext']:.3f} + ({summary['pw']:.3f} \cdot {summary['cg_x']:.4f}) = {summary['my_cg']:.4f} \text{{ Ton-m}} $$")
+
+            st.markdown("### Step 5: Group Properties & Individual Moments of Inertia ($I_{xx}, I_{yy}$)")
+            st.markdown(r"Where $x_i = x_{actual} - \bar{{x}}$ and $y_i = y_{actual} - \bar{{y}}$ represents the pile distance from the new centroid:")
             
+            df_inertia = df_res[['Pile_Name', 'x_actual', 'y_actual', 'x_i', 'y_i', 'x_i_sq', 'y_i_sq']].copy()
+            df_inertia.columns = ['Pile', 'x_actual', 'y_actual', 'x_i (x - x̄)', 'y_i (y - ȳ)', 'x_i²', 'y_i²']
+            st.table(df_inertia.style.format({col: '{:.4f}' for col in df_inertia.columns if col != 'Pile'}))
+
+            st.markdown(rf"$$ I_{{xx}} = \sum (y_i)^2 = {summary['ixx']:.4f} \text{{ m}}^2 $$")
+            st.markdown(rf"$$ I_{{yy}} = \sum (x_i)^2 = {summary['iyy']:.4f} \text{{ m}}^2 $$")
+            
+            st.markdown("### Step 6: Detailed Pile Reaction Substitution & Evaluation ($R_i$)")
+            st.markdown("Applying the rigid elastic foundation equation to calculate individual axial load allocation:")
+            st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} \le R_{allow} $$")
+            
+            st.markdown("**Complete Substitution Breakdown:**")
             for idx, row in df_res.iterrows():
                 check_symbol = r"\le" if row['Ri'] <= summary['safe_load'] else r"\gt"
-                status_latex = r"\text{ [OK]}" if row['Ri'] <= summary['safe_load'] else r"\text{ [NG]}"
-                formula = rf"$$ R_{{{row['Pile_Name']}}} = \dots = {row['Ri']:.3f} \text{{ Tons}} {check_symbol} {summary['safe_load']:.3f} \text{{ Tons}} {status_latex} $$"
+                status_latex = r"\text{ [OK - PASSED]}" if row['Ri'] <= summary['safe_load'] else r"\text{ [NG - OVERLOADED]}"
+                
+                # แสดงสูตรการแทนค่าตัวเลขดิบแบบครบถ้วนสมบูรณ์ไม่มีการละพจน์
+                formula = (
+                    rf"$$ R_{{{row['Pile_Name']}}} = \frac{{{summary['pw']:.2f}}}{{{summary['n']}}} + "
+                    rf"\frac{{{summary['mx_cg']:.4f} \cdot ({row['y_i']:.4f})}}{{{summary['ixx']:.4f}}} + "
+                    rf"\frac{{{summary['my_cg']:.4f} \cdot ({row['x_i']:.4f})}}{{{summary['iyy']:.4f}}} "
+                    rf"= {row['Ri']:.3f} \text{{ Tons}} {check_symbol} {summary['safe_load']:.3f} \text{{ Tons}} {status_latex} $$"
+                )
                 st.markdown(formula)
 
         st.divider()
 
+        # --- Graphical Plots & Summary Display ---
         out_col1, out_col2 = st.columns([1, 1])
         
         with out_col1:
-            st.subheader("📊 Summary of Pile Reactions ($R_i$)")
+            st.subheader("📊 Summary Table")
             
             def highlight_fail(row):
                 return ['background-color: #ffcccc' if row['Status'] != 'PASS' else '' for _ in row]
@@ -159,9 +205,9 @@ if st.button("🧮 Calculate & Verify Safety Status", type="primary"):
             max_pile = df_res.loc[df_res['Ri'].idxmax(), 'Pile_Name']
             
             if max_r > summary['safe_load']:
-                st.error(f"⚠️ **Critical Overload:** Pile **{max_pile}** Max Load = **{max_r:.3f} Tons** (Safe Limit = {summary['safe_load']:.2f} Tons).")
+                st.error(f"⚠️ **Critical Alert:** Pile **{max_pile}** carries **{max_r:.3f} Tons** which overshoots the structural safety barrier of {summary['safe_load']:.2f} Tons.")
             else:
-                st.info(f"ℹ️ **Maximum Pile Load:** Pile **{max_pile}** carries **{max_r:.3f} Tons** (Within safe limits).")
+                st.info(f"ℹ️ **Design Summary:** Pile **{max_pile}** sustains the governing maximum load of **{max_r:.3f} Tons**, operating safely within limits.")
 
         with out_col2:
             st.subheader("📐 Foundation Deviation Plan")
