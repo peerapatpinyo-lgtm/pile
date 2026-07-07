@@ -313,75 +313,11 @@ def render_proof_tab():
     st.markdown(r"$$ k \theta_y = \frac{M_{y,cg}}{I_{yy}} \quad \text{--- (Eq. 4)} $$")
 
     # --- STEP 6 ---
+    st.subheader("Step 6: Final Linear Superposition")
+    st.markdown("Substituting the solved equilibrium constants (Eq. 2, Eq. 3, and Eq. 4) back into the pile reaction equation (Eq. 1) yields the final master formula:")
     
-    st.markdown("#### Step 6: Detailed Pile Reaction Substitution via Asymmetrical Bending Theory ($R_i$)")
-            
-            # 1. แสดงสมการเต็ม (Full Equation) เพื่อความชัดเจนของทฤษฎี
-            st.markdown("To ensure complete analytical transparency, the calculation is strictly based on the **Full Generalized Asymmetrical Bending Equation**:")
-            
-            st.info(r"$$ R_i = k_i \cdot \left[ \frac{P_w}{\sum k} + \left( \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) y_i + \left( \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) x_i \right] $$")
-            
-            st.markdown("To simplify the explicit substitution for each pile, the bracketed terms are first evaluated globally as fundamental coefficients ($A, B$, and $C$):")
-            
-            # 2. คำนวณ Global Coefficients (สัมประสิทธิ์ส่วนกลาง)
-            coef_axial = pw_input / summary['sum_k']
-            coef_mx = (summary['mx_cg'] * summary['iyy'] - summary['my_cg'] * summary['ixy']) / denom_val if denom_val != 0 else 0
-            coef_my = (summary['my_cg'] * summary['ixx'] - summary['mx_cg'] * summary['ixy']) / denom_val if denom_val != 0 else 0
-            
-            st.markdown("##### 🔸 Global Foundation Coefficients Evaluation")
-            st.markdown(rf"""
-            * **Axial Term ($A$):**  
-              $$\frac{{P_w}}{{\sum k}} = \frac{{{pw_input:.3f}}}{{{summary['sum_k']:.4f}}} = {coef_axial:.4f}$$
-            * **X-Axis Bending Term ($B$):**  
-              $$\frac{{M_{{x,cg}} I_{{yy}} - M_{{y,cg}} I_{{xy}}}}{{I_{{xx}}I_{{yy}} - I_{{xy}}^2}} = \frac{{({summary['mx_cg']:.3f})({summary['iyy']:.4f}) - ({summary['my_cg']:.3f})({summary['ixy']:.4f})}}{{{denom_val:.6f}}} = {coef_mx:.4f}$$
-            * **Y-Axis Bending Term ($C$):**  
-              $$\frac{{M_{{y,cg}} I_{{xx}} - M_{{x,cg}} I_{{xy}}}}{{I_{{xx}}I_{{yy}} - I_{{xy}}^2}} = \frac{{({summary['my_cg']:.3f})({summary['ixx']:.4f}) - ({summary['mx_cg']:.3f})({summary['ixy']:.4f})}}{{{denom_val:.6f}}} = {coef_my:.4f}$$
-            """)
-            
-            st.markdown("##### 🔸 Individual Pile-by-Pile Explicit Substitution")
-            
-            # 3. ลูปแสดงการแทนค่ารายต้นแบบละเอียด (แสดงความเชื่อมโยงกับสูตรเต็ม)
-            for idx, row in df_res.iterrows():
-                ki = row['k_factor']
-                xi = row['x_i']
-                yi = row['y_i']
-                ri = row['Ri']
-                r_allow = row['Allowable_Load']
-                
-                # คำนวณพจน์ย่อย
-                term1 = coef_axial
-                term2 = coef_mx * yi
-                term3 = coef_my * xi
-                
-                check_symbol = r"\le" if ri <= r_allow else r"\gt"
-                status_text = "PASS (Safe)" if ri <= r_allow else "FAIL (Overloaded)"
-                
-                # สร้าง Container เพื่อให้แต่ละเสาเข็มมีกรอบของตัวเอง ชัดเจนขึ้น
-                with st.container():
-                    st.markdown(f"###### 🔹 Pile ID: **{row['Pile_Name']}** ({row['Pile_Type']} Pile)")
-                    
-                    # Sub-Step A: สมการโครงสร้างหลัก
-                    st.markdown(r"**A. Simplified Governing Model:**")
-                    st.markdown(r"$$ R_i = k_i \cdot \left[ A + B(y_i) + C(x_i) \right] $$")
-                    
-                    # Sub-Step B: แทนค่าตัวเลขลงในสมการ (โยงค่า A, B, C และ x, y ของเสาเข็มต้นนั้น)
-                    st.markdown(r"**B. Explicit Numerical Substitution:**")
-                    st.markdown(rf"$$ R_{{{row['Pile_Name']}}} = {ki:.3f} \cdot \left[ {coef_axial:.4f} + ({coef_mx:.4f})({yi:.4f}) + ({coef_my:.4f})({xi:.4f}) \right] $$")
-                    
-                    # Sub-Step C: ผลลัพธ์ของแต่ละพจน์ (Axial + Moment X + Moment Y)
-                    st.markdown(r"**C. Evaluated Component Stresses:**")
-                    st.markdown(rf"$$ R_{{{row['Pile_Name']}}} = {ki:.3f} \cdot \left[ {term1:.4f} \text{{ (Axial)}} + ({term2:.4f}) \text{{ (X-Rot)}} + ({term3:.4f}) \text{{ (Y-Rot)}} \right] $$")
-                    
-                    # Sub-Step D: สรุปผลและตรวจสอบน้ำหนักบรรทุก
-                    st.markdown(r"**D. Boundary Capacity Verification:**")
-                    st.markdown(rf"$$ R_{{{row['Pile_Name']}}} = \mathbf{{{ri:.3f} \text{{ Tons}}}} \quad {check_symbol} \quad R_{{allow}} = {r_allow:.3f} \text{{ Tons}} $$")
-                    
-                    if ri <= r_allow:
-                        st.success(f"✅ **{row['Pile_Name']} Verification:** Calculated Load {ri:.3f} t ≤ Allowable {r_allow:.3f} t → **{status_text}**")
-                    else:
-                        st.error(f"❌ **{row['Pile_Name']} Verification:** Calculated Load {ri:.3f} t > Allowable {r_allow:.3f} t → **{status_text}**")
-                    
-                    st.divider() # เส้นคั่นระหว่างเสาเข็มแต่ละต้น
+    st.success("🎯 **Final Master Equation:**")
+    st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
     
     # --- STEP 7 ---
     st.subheader("Step 7: Analysis of As-Built Pile Deviation")
