@@ -145,7 +145,6 @@ def render_proof_tab():
 
     with col2:
         # --- Figure 1: Geometric Mapping & Equivalent Forces ---
-        # Optimized scale (3.8 x 3.8) to cleanly display annotations without crowding
         fig1, ax1 = plt.subplots(figsize=(3.8, 3.8))
 
         cap = patches.Rectangle((-2.5, -2.5), 5.0, 5.0, linewidth=1.2, edgecolor='#2c3e50', facecolor='#f8f9fa', zorder=1)
@@ -161,7 +160,6 @@ def render_proof_tab():
         cg_x, cg_y = 0, 0
         col_x, col_y = -0.8, 1.2
 
-        # Render layout piles and display mapping coordinates (x, y)
         for i, (px, py) in enumerate(zip(piles_x, piles_y)):
             pile = patches.Circle((px, py), 0.25, linewidth=1, edgecolor='#34495e', facecolor='#bdc3c7', zorder=3)
             ax1.add_patch(pile)
@@ -173,7 +171,6 @@ def render_proof_tab():
         ax1.plot(col_x, col_y, marker='x', color='black', markersize=4, markeredgewidth=1, zorder=6)
         ax1.text(col_x, col_y - 0.35, r'$P_w$', ha='center', fontsize=7, fontweight='bold', color='#d35400', zorder=6)
 
-        # Plot external moments at the column head (Mx,ext, My,ext)
         mx_ext_arrow = FancyArrowPatch((col_x + 0.25, col_y + 0.15), (col_x + 0.25, col_y - 0.15), 
                                        connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=2.5,head_length=2.5", 
                                        color='#8e44ad', lw=0.8, zorder=6)
@@ -332,7 +329,6 @@ def render_proof_tab():
     st.markdown("- **1. Centroidal Shift:** The physical center of gravity of the group shifts. The coordinate origin must be re-established, which consequently changes the load eccentricities ($e_x, e_y$).")
     st.markdown("- **2. Asymmetrical Bending Induction:** The group structure loses its axis of symmetry ($I_{xy} \\neq 0$). The rotation parameters (Eq. 3 and Eq. 4) become strongly coupled, requiring the generalized asymmetrical bending equation:")
     
-    # Generalized equation for highly asymmetrical pile layouts
     st.markdown(r"$$ R_i = \frac{P_w}{n} + \left[ \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] y_i + \left[ \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] x_i $$")
 
     st.divider()
@@ -349,7 +345,6 @@ st.set_page_config(page_title="Advanced Pile Redesign System", layout="wide")
 st.title("🏗️ Pile Deviation, Mitigation & Spacing Analysis Report")
 st.markdown("Professional foundation redesign tool featuring dual-capacity checking, minimum spacing verification, and a **High-Detail Calculation Report**.")
 
-# Create Tab Layout
 tab_calc, tab_proof = st.tabs(["🧮 Calculation & Mitigation", "📐 Formula Derivation (Proof)"])
 
 # ----------------- TAB 1: Calculation & Mitigation -----------------
@@ -393,7 +388,6 @@ with tab_calc:
 
     st.divider()
 
-    # --- Calculation & Results Section ---
     if st.button("🧮 Calculate & Generate High-Detail Report", type="primary"):
         
         df_res, summary = calculate_pile_deviation(pw_input, mx_input, my_input, qmain_input, qmicro_input, fs_input, min_space_input, edited_df)
@@ -462,25 +456,65 @@ with tab_calc:
             denom_val = (summary['ixx'] * summary['iyy']) - (summary['ixy'] ** 2)
             st.markdown(rf"$$ \text{{Denominator Constraint (Deterministic Demanding)}} = I_{{xx}}I_{{yy}} - I_{{xy}}^2 = {denom_val:.6f} $$")
             
+            # =================================================================
+            # NEW/REWRITTEN STEP 6: HIGH-DETAIL EXPLICIT NUMERICAL SUBSTITUTION
+            # =================================================================
             st.markdown("#### Step 6: Detailed Pile Reaction Substitution via Asymmetrical Bending Theory ($R_i$)")
-            st.markdown(r"$$ R_i = k_{factor} \cdot \left[ \frac{P_w}{\sum k} + \left( \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) y_i + \left( \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) x_i \right] \le R_{allow} $$")
+            st.markdown("To ensure complete analytical transparency, the calculation is broken down by first evaluating the global foundation bending coefficients, followed by explicit coordinate substitution for each individual pile.")
             
-            st.markdown("**Complete Numerical Substitution per Individual Pile:**")
+            # Compute global coefficients for the entire group
+            coef_axial = pw_input / summary['sum_k']
+            coef_mx = (summary['mx_cg'] * summary['iyy'] - summary['my_cg'] * summary['ixy']) / denom_val if denom_val != 0 else 0
+            coef_my = (summary['my_cg'] * summary['ixx'] - summary['mx_cg'] * summary['ixy']) / denom_val if denom_val != 0 else 0
+            
+            st.markdown("##### 🔸 Global Foundation Coefficients")
+            st.markdown(rf"""
+            * **Axial Translation Term ($A$):**  
+              $$\frac{{P_w}}{{\sum k}} = \frac{{{pw_input:.3f}}}{{{summary['sum_k']:.4f}}} = {coef_axial:.4f}$$
+            * **X-Axis Bending Gradient ($B$):**  
+              $$\frac{{M_{{x,cg}} \cdot I_{{yy}} - M_{{y,cg}} \cdot I_{{xy}}}}{{I_{{xx}}I_{{yy}} - I_{{xy}}^2}} = \frac{{({summary['mx_cg']:.3f} \cdot {summary['iyy']:.4f}) - ({summary['my_cg']:.3f} \cdot {summary['ixy']:.4f})}}{{{denom_val:.6f}}} = {coef_mx:.4f}$$
+            * **Y-Axis Bending Gradient ($C$):**  
+              $$\frac{{M_{{y,cg}} \cdot I_{{xx}} - M_{{x,cg}} \cdot I_{{xy}}}}{{I_{{xx}}I_{{yy}} - I_{{xy}}^2}} = \frac{{({summary['my_cg']:.3f} \cdot {summary['ixx']:.4f}) - ({summary['mx_cg']:.3f} \cdot {summary['ixy']:.4f})}}{{{denom_val:.6f}}} = {coef_my:.4f}$$
+            """)
+            
+            st.markdown("##### 🔸 Individual Pile-by-Pile Explicit Substitution")
+            
+            # Iterate through each pile with absolute mathematical visibility
             for idx, row in df_res.iterrows():
-                check_symbol = r"\le" if row['Ri'] <= row['Allowable_Load'] else r"\gt"
-                status_latex = r"\text{ [OK - PASSED]}" if row['Ri'] <= row['Allowable_Load'] else r"\text{ [NG - OVERLOADED]}"
+                ki = row['k_factor']
+                xi = row['x_i']
+                yi = row['y_i']
+                ri = row['Ri']
+                r_allow = row['Allowable_Load']
                 
-                # Compute sub-terms to display clear numerical components for engineering verification
-                term1_val = pw_input / summary['sum_k']
-                term2_val = ((summary['mx_cg'] * summary['iyy'] - summary['my_cg'] * summary['ixy']) / denom_val) * row['y_i'] if denom_val != 0 else 0
-                term3_val = ((summary['my_cg'] * summary['ixx'] - summary['mx_cg'] * summary['ixy']) / denom_val) * row['x_i'] if denom_val != 0 else 0
+                term1 = coef_axial
+                term2 = coef_mx * yi
+                term3 = coef_my * xi
                 
-                formula = (
-                    rf"$$ R_{{{row['Pile_Name']}}} = {row['k_factor']:.3f} \cdot \left[ {term1_val:.3f} + "
-                    rf"({term2_val:.3f}) + ({term3_val:.3f}) \right] "
-                    rf"= {row['Ri']:.3f} \text{{ Tons}} {check_symbol} {row['Allowable_Load']:.3f} \text{{ Tons}} {status_latex} $$"
-                )
-                st.markdown(formula)
+                check_symbol = r"\le" if ri <= r_allow else r"\gt"
+                status_text = "PASS (Safe)" if ri <= r_allow else "FAIL (Overloaded)"
+                
+                with st.container():
+                    st.markdown(f"###### 🔹 Pile ID: **{row['Pile_Name']}** ({row['Pile_Type']} Pile)")
+                    
+                    st.markdown(r"**A. Governing Mathematical Model:**")
+                    st.markdown(r"$$ R_i = k_i \cdot \left[ A + B \cdot y_i + C \cdot x_i \right] $$")
+                    
+                    st.markdown(r"**B. Explicit Numerical Substitution:**")
+                    st.markdown(rf"$$ R_{{{row['Pile_Name']}}} = {ki:.3f} \cdot \left[ {coef_axial:.4f} + ({coef_mx:.4f}) \cdot ({yi:.4f}) + ({coef_my:.4f}) \cdot ({xi:.4f}) \right] $$")
+                    
+                    st.markdown(r"**C. Evaluated Component Stresses:**")
+                    st.markdown(rf"$$ R_{{{row['Pile_Name']}}} = {ki:.3f} \cdot \left[ {term1:.4f} \text{{ (Axial)}} + ({term2:.4f}) \text{{ (X-Rot)}} + ({term3:.4f}) \text{{ (Y-Rot)}} \right] $$")
+                    
+                    st.markdown(r"**D. Boundary Capacity Verification:**")
+                    st.markdown(rf"$$ R_{{{row['Pile_Name']}}} = \mathbf{{{ri:.3f} \text{{ Tons}}}} \quad {check_symbol} \quad R_{{allow}} = {r_allow:.3f} \text{{ Tons}} $$")
+                    
+                    if ri <= r_allow:
+                        st.success(f"✅ **{row['Pile_Name']} Verification:** Calculated Load {ri:.3f} t ≤ Allowable {r_allow:.3f} t → **{status_text}**")
+                    else:
+                        st.error(f"❌ **{row['Pile_Name']} Verification:** Calculated Load {ri:.3f} t > Allowable {r_allow:.3f} t → **{status_text}**")
+                    
+                    st.write("") # Spacer
 
             st.divider()
 
