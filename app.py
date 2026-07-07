@@ -235,6 +235,99 @@ def render_proof_tab():
 
         st.pyplot(fig1, use_container_width=False)
 
+    # --- STEP 1 SUPPLEMENT: Right-Hand-Rule Moment Transfer Diagram ---
+    st.markdown("#### Why the Signs on $e_x$ and $e_y$ Differ: the Right-Hand-Rule Mechanism")
+    st.markdown("The column load $P_w\\hat{k}$ doesn't act at the CG — it acts at the column, a position $\\vec{r}=e_x\\hat{i}+e_y\\hat{j}$ away from the CG (using the diagram's frame: CG at the origin, column offset by $\\vec{r}$). Moving that force to the CG requires adding an equivalent moment $\\vec{M}_{ecc}=\\vec{r}\\times\\vec{F}$. Splitting $\\vec{r}$ into its $e_x\\hat{i}$ and $e_y\\hat{j}$ components and crossing **each one separately** with $P_w\\hat{k}$ shows why the two axes don't behave the same way:")
+    
+    rhr_col1, rhr_col2 = st.columns([1.35, 1.0])
+    
+    with rhr_col1:
+        fig_rhr, ax_r = plt.subplots(figsize=(4.6, 4.3))
+        
+        ex, ey = -0.8, 1.2  # same illustrative column offset as Figure 1 above
+        
+        ax_r.axhline(0, color='black', linewidth=1, zorder=2)
+        ax_r.axvline(0, color='black', linewidth=1, zorder=2)
+        ax_r.text(2.1, 0.08, 'X', fontsize=9, fontweight='bold')
+        ax_r.text(0.08, 2.1, 'Y', fontsize=9, fontweight='bold')
+        
+        # CG marker at origin
+        ax_r.plot(0, 0, marker='o', color='#e74c3c', markersize=6, zorder=5)
+        ax_r.plot(0, 0, marker='x', color='black', markersize=4, zorder=6)
+        ax_r.text(0.12, -0.22, 'CG (origin)', color='#c0392b', fontsize=7.5, fontweight='bold', zorder=6)
+        
+        # Component dashed lines: e_x (blue, feeds My) and e_y (orange, feeds Mx)
+        ax_r.plot([0, ex], [0, 0], color='#2980b9', linestyle='--', linewidth=1.6, zorder=3)
+        ax_r.plot([ex, ex], [0, ey], color='#e67e22', linestyle='--', linewidth=1.6, zorder=3)
+        ax_r.text(ex/2, -0.18, r'$e_x\hat{i}$', color='#2980b9', fontsize=8, ha='center', fontweight='bold')
+        ax_r.text(ex - 0.15, ey/2, r'$e_y\hat{j}$', color='#d35400', fontsize=8, ha='right', va='center', fontweight='bold')
+        
+        # r vector (CG to column) and column + load marker
+        ax_r.annotate('', xy=(ex, ey), xytext=(0, 0), arrowprops=dict(arrowstyle='-|>', color='#34495e', lw=1.6, mutation_scale=12), zorder=4)
+        ax_r.text(ex*0.55 + 0.15, ey*0.55, r'$\vec{r}$', color='#34495e', fontsize=9, fontweight='bold')
+        
+        col_box = patches.Rectangle((ex - 0.16, ey - 0.16), 0.32, 0.32, linewidth=1, edgecolor='black', facecolor='#f1c40f', zorder=5)
+        ax_r.add_patch(col_box)
+        ax_r.text(ex, ey + 0.32, r'Column: $P_w\hat{k}$' + '\n(⊗ into page)', ha='center', fontsize=7, fontweight='bold', color='#8e44ad', zorder=6)
+        
+        # Resultant curled moments AT the CG, color-matched to the component that produced them
+        mx_arrow = FancyArrowPatch((0.25, 0.35), (0.25, -0.35), connectionstyle="arc3,rad=.55",
+                                    arrowstyle="simple,head_width=3.2,head_length=3.2", color='#e67e22', lw=1.1, zorder=6)
+        ax_r.add_patch(mx_arrow)
+        ax_r.text(0.55, 0, r'$M_{x,ecc}=P_w e_y$', color='#d35400', fontsize=7.8, fontweight='bold', va='center')
+        
+        my_arrow = FancyArrowPatch((-0.35, 0.25), (0.35, 0.25), connectionstyle="arc3,rad=.55",
+                                    arrowstyle="simple,head_width=3.2,head_length=3.2", color='#2980b9', lw=1.1, zorder=6)
+        ax_r.add_patch(my_arrow)
+        ax_r.text(0, 0.55, r'$M_{y,ecc}=-P_w e_x$', color='#2980b9', fontsize=7.8, fontweight='bold', ha='center')
+        
+        ax_r.set_aspect('equal')
+        ax_r.set_xlim(-2.1, 2.1)
+        ax_r.set_ylim(-1.1, 2.1)
+        ax_r.set_title('Moment Induced by Moving $P_w$ to the CG', fontsize=8.5, fontweight='bold', pad=6)
+        ax_r.axis('off')
+        
+        st.pyplot(fig_rhr, use_container_width=False)
+        st.caption("Orange ($e_y\\hat{j}$) feeds $M_{x,ecc}$; blue ($e_x\\hat{i}$) feeds $M_{y,ecc}$ — matched by color to the curl they each produce.")
+
+    with rhr_col2:
+        fig_ref, ax_ref = plt.subplots(figsize=(3.6, 4.3))
+        ax_ref.axis('off')
+        ax_ref.set_xlim(0, 10)
+        ax_ref.set_ylim(0, 10)
+        ax_ref.set_title("Right-Hand-Rule Reference", fontsize=8.5, fontweight='bold', pad=6)
+        
+        # --- Identity 1: i x k = -j ---
+        ax_ref.text(5, 9.3, r'$\hat{i}\times\hat{k}=-\hat{j}$', ha='center', fontsize=10, fontweight='bold', color='#2980b9')
+        ax_ref.annotate('', xy=(7.3, 7.6), xytext=(5.5, 7.6), arrowprops=dict(arrowstyle='-|>', color='#2c3e50', lw=1.5))
+        ax_ref.text(7.5, 7.6, r'$\hat{i}$', fontsize=9, va='center')
+        ax_ref.text(5.5, 7.9, r'⊗ $\hat{k}$ (into page)', fontsize=7.5, color='#8e44ad')
+        ax_ref.annotate('', xy=(5.5, 6.1), xytext=(5.5, 7.3), arrowprops=dict(arrowstyle='-|>', color='#2980b9', lw=1.8))
+        ax_ref.text(5.7, 6.6, r'$-\hat{j}$', fontsize=9, color='#2980b9', fontweight='bold')
+        curl1 = FancyArrowPatch((6.6, 7.55), (5.7, 7.0), connectionstyle="arc3,rad=-.5",
+                                 arrowstyle="simple,head_width=3,head_length=3", color='#7f8c8d', lw=0.9)
+        ax_ref.add_patch(curl1)
+        ax_ref.text(5, 5.4, "Curl fingers from $\\hat{i}$ toward $\\hat{k}$\n→ thumb points along $-\\hat{j}$", ha='center', fontsize=6.8, style='italic')
+        
+        ax_ref.plot([1, 9], [4.6, 4.6], color='gray', linewidth=0.6, linestyle=':')
+        
+        # --- Identity 2: j x k = i ---
+        ax_ref.text(5, 4.15, r'$\hat{j}\times\hat{k}=\hat{i}$', ha='center', fontsize=10, fontweight='bold', color='#e67e22')
+        ax_ref.annotate('', xy=(5.5, 3.55), xytext=(5.5, 2.5), arrowprops=dict(arrowstyle='-|>', color='#2c3e50', lw=1.5))
+        ax_ref.text(5.65, 3.55, r'$\hat{j}$', fontsize=9, va='bottom')
+        ax_ref.text(5.6, 2.9, r'⊗ $\hat{k}$ (into page)', fontsize=7.5, color='#8e44ad')
+        ax_ref.annotate('', xy=(7.3, 2.5), xytext=(5.5, 2.5), arrowprops=dict(arrowstyle='-|>', color='#e67e22', lw=1.8))
+        ax_ref.text(7.4, 2.5, r'$\hat{i}$', fontsize=9, color='#e67e22', fontweight='bold', va='center')
+        curl2 = FancyArrowPatch((5.5, 3.35), (6.3, 2.65), connectionstyle="arc3,rad=-.5",
+                                 arrowstyle="simple,head_width=3,head_length=3", color='#7f8c8d', lw=0.9)
+        ax_ref.add_patch(curl2)
+        ax_ref.text(5, 1.2, "Curl fingers from $\\hat{j}$ toward $\\hat{k}$\n→ thumb points along $+\\hat{i}$", ha='center', fontsize=6.8, style='italic')
+        
+        st.pyplot(fig_ref, use_container_width=False)
+        st.caption("Same $\\hat{k}$ direction (into page) both times — only the starting axis changes, which is why the two resulting signs differ.")
+
+    st.info("**Reading back into the app's convention:** the app fixes the *column* at $(0,0)$ and lets the *CG* shift to $(\\bar{x},\\bar{y})$ instead of the reverse. Substituting $e_x=-\\bar{x}$, $e_y=-\\bar{y}$ into the boxed result above gives exactly the formulas used in the calculation sheet: $M_{x,ecc}=-P_w\\bar{y}$ and $M_{y,ecc}=+P_w\\bar{x}$.")
+
     st.divider()
 
     # --- STEP 2 ---
