@@ -421,8 +421,8 @@ with tab_calc:
 
             st.divider()
 
-            # ==========================================
-            # 2.2 HIGH-DETAIL CALCULATION SHEET 
+           # ==========================================
+            # 2.2 HIGH-DETAIL CALCULATION SHEET (Upgraded to Asymmetrical & Stiffness-Weighted)
             # ==========================================
             st.subheader("📝 Engineering Step-by-Step Calculation Sheet")
             
@@ -436,36 +436,51 @@ with tab_calc:
             df_actuals = df_res[['Pile_Name', 'Pile_Type', 'x_design', 'dev_x', 'x_actual', 'y_design', 'dev_y', 'y_actual']].copy()
             st.table(df_actuals.style.format({col: '{:.4f}' for col in df_actuals.columns if col not in ['Pile_Name', 'Pile_Type']}))
 
-            st.markdown("#### Step 3: Shifted Center of Gravity (CG) of the Global Pile Group")
-            st.markdown(rf"$$ \bar{{x}} = \frac{{\sum x_{{actual}}}}{{n}} = \frac{{{df_res['x_actual'].sum():.4f}}}{{{summary['n']}}} = {summary['cg_x']:.4f} \text{{ m}} $$")
-            st.markdown(rf"$$ \bar{{y}} = \frac{{\sum y_{{actual}}}}{{n}} = \frac{{{df_res['y_actual'].sum():.4f}}}{{{summary['n']}}} = {summary['cg_y']:.4f} \text{{ m}} $$")
+            st.markdown("#### Step 3: Stiffness-Weighted Center of Gravity (CG) of the Global Pile Group")
+            st.markdown("ในการคำนวณกรณีที่ขนาดเสาเข็มไม่เท่ากัน จะต้องใช้ค่าความแข็งเกร็งสัมพัทธ์ ($k_{factor}$) ในการถ่วงน้ำหนักหาตำแหน่งจุดหมุนทางวิศวกรรม:")
+            st.markdown(rf"$$ \bar{{x}} = \frac{{\sum (k_{{factor}} \cdot x_{{actual}})}}{{\sum k_{{factor}}}} = {summary['cg_x']:.4f} \text{{ m}} $$")
+            st.markdown(rf"$$ \bar{{y}} = \frac{{\sum (k_{{factor}} \cdot y_{{actual}})}}{{\sum k_{{factor}}}} = {summary['cg_y']:.4f} \text{{ m}} $$")
+            st.caption(f"หมายเหตุ: Total Relative Stiffness ($\sum k$) = {summary['sum_k']:.4f}")
             
             st.markdown("#### Step 4: Total Eccentric Moments about New Shifted Centroid ($M_{x,cg}, M_{y,cg}$)")
-            st.markdown(rf"$$ M_{{x,cg}} = M_{{x,ext}} + (P_w \cdot \bar{{y}}) = {summary['mx_ext']:.3f} + ({summary['pw']:.3f} \cdot {summary['cg_y']:.4f}) = {summary['mx_cg']:.4f} \text{{ Ton-m}} $$")
-            st.markdown(rf"$$ M_{{y,cg}} = M_{{y,ext}} + (P_w \cdot \bar{{x}}) = {summary['my_ext']:.3f} + ({summary['pw']:.3f} \cdot {summary['cg_x']:.4f}) = {summary['my_cg']:.4f} \text{{ Ton-m}} $$")
+            st.markdown("เนื่องจากจุดศูนย์กลางเสาตอม่ออยู่ที่พิกัด $(0,0)$ ระยะเยื้องศูนย์เมื่อเทียบกับจุด CG ใหม่จึงเท่ากับ $(- \bar{{x}}, - \bar{{y}})$:")
+            st.markdown(rf"$$ M_{{x,cg}} = M_{{x,ext}} + (P_w \cdot (-\bar{{y}})) = {summary['mx_ext']:.3f} + ({summary['pw']:.3f} \cdot {-summary['cg_y']:.4f}) = {summary['mx_cg']:.4f} \text{{ Ton-m}} $$")
+            st.markdown(rf"$$ M_{{y,cg}} = M_{{y,ext}} + (P_w \cdot (-\bar{{x}})) = {summary['my_ext']:.3f} + ({summary['pw']:.3f} \cdot {-summary['cg_x']:.4f}) = {summary['my_cg']:.4f} \text{{ Ton-m}} $$")
 
-            st.markdown("#### Step 5: Group Geometrical Properties & Individual Moments of Inertia ($I_{xx}, I_{yy}$)")
+            st.markdown("#### Step 5: Group Geometrical Properties & Stiffness-Weighted Moments of Inertia ($I_{xx}, I_{yy}, I_{xy}$)")
             st.markdown(r"Where $x_i = x_{actual} - \bar{{x}}$ and $y_i = y_{actual} - \bar{{y}}$:")
-            df_inertia = df_res[['Pile_Name', 'Pile_Type', 'x_actual', 'y_actual', 'x_i', 'y_i', 'x_i_sq', 'y_i_sq']].copy()
-            df_inertia.columns = ['Pile', 'Type', 'x_actual', 'y_actual', 'x_i (x - x̄)', 'y_i (y - ȳ)', 'x_i²', 'y_i²']
+            df_inertia = df_res[['Pile_Name', 'Pile_Type', 'k_factor', 'x_actual', 'y_actual', 'x_i', 'y_i']].copy()
+            df_inertia['k_factor * x_i²'] = df_res['k_factor'] * (df_res['x_i'] ** 2)
+            df_inertia['k_factor * y_i²'] = df_res['k_factor'] * (df_res['y_i'] ** 2)
+            df_inertia['k_factor * x_i * y_i'] = df_res['k_factor'] * (df_res['x_i'] * df_res['y_i'])
+            
+            df_inertia.columns = ['Pile', 'Type', 'k_factor', 'x_act', 'y_act', 'x_i', 'y_i', 'k·x_i²', 'k·y_i²', 'k·x_i·y_i']
             st.table(df_inertia.style.format({col: '{:.4f}' for col in df_inertia.columns if col not in ['Pile', 'Type']}))
 
-            st.markdown(rf"$$ I_{{xx}} = \sum (y_i)^2 = {summary['ixx']:.4f} \text{{ m}}^2 $$")
-            st.markdown(rf"$$ I_{{yy}} = \sum (x_i)^2 = {summary['iyy']:.4f} \text{{ m}}^2 $$")
+            st.markdown(rf"$$ I_{{xx}} = \sum k_{{factor}} \cdot (y_i)^2 = {summary['ixx']:.4f} \text{{ m}}^2 $$")
+            st.markdown(rf"$$ I_{{yy}} = \sum k_{{factor}} \cdot (x_i)^2 = {summary['iyy']:.4f} \text{{ m}}^2 $$")
+            st.markdown(rf"$$ I_{{xy}} = \sum k_{{factor}} \cdot (x_i \cdot y_i) = {summary['ixy']:.4f} \text{{ m}}^2 \quad \color{{red}}{{\text{{(Product of Inertia จากการเยื้องศูนย์)}}}} $$")
             
-            st.markdown("#### Step 6: Detailed Pile Reaction Substitution & Individual Safety Check ($R_i$)")
-            st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} \le R_{allow} $$")
+            denom_val = (summary['ixx'] * summary['iyy']) - (summary['ixy'] ** 2)
+            st.markdown(rf"$$ \text{{Denominator Constraint (Denominator)}} = I_{{xx}}I_{{yy}} - I_{{xy}}^2 = {denom_val:.6f} $$")
             
-            st.markdown("**Complete Numerical Substitution:**")
+            st.markdown("#### Step 6: Detailed Pile Reaction Substitution via Asymmetrical Bending Theory ($R_i$)")
+            st.markdown(r"$$ R_i = k_{factor} \cdot \left[ \frac{P_w}{\sum k} + \left( \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] y_i + \left[ \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] x_i \right) \le R_{allow} $$")
+            
+            st.markdown("**Complete Numerical Substitution per Individual Pile:**")
             for idx, row in df_res.iterrows():
                 check_symbol = r"\le" if row['Ri'] <= row['Allowable_Load'] else r"\gt"
                 status_latex = r"\text{ [OK - PASSED]}" if row['Ri'] <= row['Allowable_Load'] else r"\text{ [NG - OVERLOADED]}"
                 
+                # คำนวณพจน์ย่อยมาแสดงใน LaTeX ให้วิศวกรตรวจสอบตัวเลขได้ง่ายขึ้น
+                term1_val = pw_input / summary['sum_k']
+                term2_val = ((summary['mx_cg'] * summary['iyy'] - summary['my_cg'] * summary['ixy']) / denom_val) * row['y_i'] if denom_val != 0 else 0
+                term3_val = ((summary['my_cg'] * summary['ixx'] - summary['mx_cg'] * summary['ixy']) / denom_val) * row['x_i'] if denom_val != 0 else 0
+                
                 formula = (
-                    rf"$$ R_{{{row['Pile_Name']}}} = \frac{{{summary['pw']:.2f}}}{{{summary['n']}}} + "
-                    rf"\frac{{{summary['mx_cg']:.4f} \cdot ({row['y_i']:.4f})}}{{{summary['ixx']:.4f}}} + "
-                    rf"\frac{{{summary['my_cg']:.4f} \cdot ({row['x_i']:.4f})}}{{{summary['iyy']:.4f}}} "
-                    rf"= {row['Ri']:.3f} \text{{ Tons}} {check_symbol} {row['Allowable_Load']:.3f} \text{{ Tons (Type: {row['Pile_Type']})}} {status_latex} $$"
+                    rf"$$ R_{{{row['Pile_Name']}}} = {row['k_factor']:.3f} \cdot \left[ {term1_val:.3f} + "
+                    rf"({term2_val:.3f}) + ({term3_val:.3f}) \right] "
+                    rf"= {row['Ri']:.3f} \text{{ Tons}} {check_symbol} {row['Allowable_Load']:.3f} \text{{ Tons}} {status_latex} $$"
                 )
                 st.markdown(formula)
 
