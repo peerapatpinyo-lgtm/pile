@@ -303,11 +303,6 @@ def render_proof_tab():
     st.success("🎯 **Final Master Equation:**")
     st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
     
-    st.divider()
-    st.markdown("### 📌 Summary of Geometric Mapping")
-    st.markdown("- The position vector **$\\vec{r}_i = x_i \hat{i} + y_i \hat{j}$** physically maps each pile's coordinates relative to the CG.")
-    st.markdown("- The vector cross product elegantly demonstrates why $y_i$ couples with $I_{xx}$ (rotation about the X-axis) and $x_i$ couples with $I_{yy}$ (rotation about the Y-axis) without relying on arbitrary assumptions.")
-
     # --- STEP 7 (NEW) ---
     st.subheader("Step 7: Note on As-Built Pile Deviation (เสาเข็มหนีศูนย์)")
     
@@ -320,7 +315,13 @@ def render_proof_tab():
     
     # สมการแบบเต็มกรณีเข็มเยื้องจนเสียสมมาตร
     st.markdown(r"$$ R_i = \frac{P_w}{n} + \left[ \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] y_i + \left[ \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] x_i $$")
+
     
+    st.divider()
+    st.markdown("### 📌 Summary of Geometric Mapping")
+    st.markdown("- The position vector **$\\vec{r}_i = x_i \hat{i} + y_i \hat{j}$** physically maps each pile's coordinates relative to the CG.")
+    st.markdown("- The vector cross product elegantly demonstrates why $y_i$ couples with $I_{xx}$ (rotation about the X-axis) and $x_i$ couples with $I_{yy}$ (rotation about the Y-axis) without relying on arbitrary assumptions.")
+
 # 3. Streamlit UI and Output Rendering
 # ==========================================
 st.set_page_config(page_title="Advanced Pile Redesign System", layout="wide")
