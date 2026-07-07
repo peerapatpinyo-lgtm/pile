@@ -26,9 +26,13 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     safe_load_main = q_main / fs if fs > 0 else 0
     safe_load_micro = q_micro / fs if fs > 0 else 0
 
-    # 1. Stiffness Assumption: Approximate stiffness ratio based on ultimate capacity
+    # 1. Stiffness Assumption: relative axial stiffness is APPROXIMATED by the
+    #    ratio of ultimate capacities (Q_micro / Q_main). This is a simplification:
+    #    true axial stiffness depends on (E*A/L) of each pile, not on its ultimate
+    #    geotechnical capacity. It is used here only as a practical proxy when
+    #    section/length data isn't available. This assumption is flagged to the user.
     k_main = 1.0
-    k_micro = q_micro / q_main if q_main > 0 else 0.5 
+    k_micro = q_micro / q_main if q_main > 0 else 0.5
 
     sum_k = 0
     for p in piles:
@@ -57,9 +61,17 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     cg_x = sum(p['k_factor'] * p['x_actual'] for p in piles) / sum_k
     cg_y = sum(p['k_factor'] * p['y_actual'] for p in piles) / sum_k
 
-    # 3. Eccentric Moments (Column center is at 0,0 -> relative to CG is -cg_x, -cg_y)
+    # 3. Eccentric Moments (Column center is at 0,0 -> position relative to CG is
+    #    (-cg_x, -cg_y)). Using the SAME moment convention established below
+    #    (Mx = sum(R*y), My = -sum(R*x)), treating the column load Pw as a
+    #    "virtual pile" reaction at (-cg_x, -cg_y) relative to the CG gives:
+    #      Mx_ecc = Pw * (-cg_y)   [consistent with Mx = sum(R*y)]
+    #      My_ecc = -Pw * (-cg_x) = Pw * (+cg_x)  [consistent with My = -sum(R*x)]
+    #    Note the asymmetry between the x and y terms is NOT a typo -- it falls
+    #    directly out of the i x k = -j, j x k = i identities used throughout
+    #    the derivation (see Proof tab, Step 4).
     ecc_mx = pw * (-cg_y)
-    ecc_my = pw * (-cg_x)
+    ecc_my = pw * (cg_x)
     mx_cg = mx_ext + ecc_mx
     my_cg = my_ext + ecc_my
 
@@ -82,15 +94,23 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
         # Axial translation component
         term1 = pw / sum_k
         
-        # Biaxial rotational components (coupled via cross product of inertia)
+        # Biaxial rotational components (coupled via product of inertia).
+        # Derived from solving the 2x2 moment-equilibrium system
+        #   Mx_cg = k*theta_x*Ixx - k*theta_y*Ixy
+        #   My_cg = k*theta_y*Iyy - k*theta_x*Ixy
+        # for theta_x, theta_y, then substituting back into
+        #   R_i = k_i*(w0 + theta_x*y_i - theta_y*x_i)
+        # NOTE the minus sign ahead of the theta_y (My-driven) term -- it is
+        # required by the same cross-product convention that gives
+        # Mx=sum(R*y) but My=-sum(R*x) (see Proof tab, Steps 4-6).
         if denom != 0:
-            term2 = ((mx_cg * iyy - my_cg * ixy) / denom) * p['y_i']
-            term3 = ((my_cg * ixx - mx_cg * ixy) / denom) * p['x_i']
+            term2 = ((mx_cg * iyy + my_cg * ixy) / denom) * p['y_i']
+            term3 = ((my_cg * ixx + mx_cg * ixy) / denom) * p['x_i']
         else:
             term2 = term3 = 0
             
         # Total force reaction = Relative Stiffness * (Combined Unit Displacement)
-        p['Ri'] = p['k_factor'] * (term1 + term2 + term3)
+        p['Ri'] = p['k_factor'] * (term1 + term2 - term3)
         
         if p['Ri'] > p['Allowable_Load']:
             p['Status'] = 'FAIL (Overload)'
@@ -139,9 +159,10 @@ def render_proof_tab():
         
         st.info(r"""
         **Moment Transfer Equation:**
-        $$ M_{x,cg} = M_{x,ext} + (P_w \cdot e_y) $$
+        $$ M_{x,cg} = M_{x,ext} - (P_w \cdot e_y) $$
         $$ M_{y,cg} = M_{y,ext} + (P_w \cdot e_x) $$
         """)
+        st.caption("Note: the opposite signs on the $e_x$ and $e_y$ terms are not a typo. They follow directly from the $\\hat{i}\\times\\hat{k}=-\\hat{j}$, $\\hat{j}\\times\\hat{k}=\\hat{i}$ identities used in Step 4, which also give $M_{x,cg}=\\sum(R_i y_i)$ but $M_{y,cg}=-\\sum(R_i x_i)$.")
 
     with col2:
         # --- Figure 1: Geometric Mapping & Equivalent Forces ---
@@ -311,11 +332,13 @@ def render_proof_tab():
     st.markdown("By defining the Pile Group Moments of Inertia as $I_{xx} = \sum y_i^2$ and $I_{yy} = \sum x_i^2$, we solve for the rotational terms:")
     st.markdown(r"$$ k \theta_x = \frac{M_{x,cg}}{I_{xx}} \quad \text{--- (Eq. 3)} $$")
     st.markdown(r"$$ k \theta_y = \frac{M_{y,cg}}{I_{yy}} \quad \text{--- (Eq. 4)} $$")
+    st.markdown("Substituting Eq. 3 and Eq. 4 back into Eq. 1 gives the symmetric-case reaction formula — note the **minus** sign carried on the $\\theta_y$ (My-driven) term:")
+    st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg}}{I_{xx}} y_i - \frac{M_{y,cg}}{I_{yy}} x_i $$")
 
     # --- STEP 6 (Theory Only) ---
     st.subheader("Step 6: Generalized Asymmetrical Formulation")
-    st.markdown("When substituting the solutions back into Eq. 1 and generalizing for asymmetrical pile groups (where $I_{xy} \neq 0$ and stiffness $k_i$ varies), we arrive at the full governing equation utilized in this software:")
-    st.info(r"$$ R_i = k_i \cdot \left[ \frac{P_w}{\sum k} + \left( \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) y_i + \left( \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) x_i \right] $$")
+    st.markdown("When substituting the solutions back into Eq. 1 and generalizing for asymmetrical pile groups (where $I_{xy} \neq 0$ and stiffness $k_i$ varies), we solve the coupled 2x2 system $M_{x,cg}=k_i\\theta_xI_{xx}-k_i\\theta_yI_{xy}$, $M_{y,cg}=k_i\\theta_yI_{yy}-k_i\\theta_xI_{xy}$ and arrive at the full governing equation utilized in this software:")
+    st.info(r"$$ R_i = k_i \cdot \left[ \frac{P_w}{\sum k} + \left( \frac{M_{x,cg} I_{yy} + M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) y_i - \left( \frac{M_{y,cg} I_{xx} + M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) x_i \right] $$")
     
     # --- STEP 7 ---
     st.subheader("Step 7: Analysis of As-Built Pile Deviation")
@@ -431,9 +454,9 @@ with tab_calc:
             st.caption(f"Note: Total Relative Stiffness ($\sum k$) = {summary['sum_k']:.4f}")
             
             st.markdown("#### Step 4: Total Eccentric Moments about New Shifted Centroid ($M_{x,cg}, M_{y,cg}$)")
-            st.markdown("Since the physical column center is located at $(0,0)$, the resulting eccentricities relative to the new stiffness-weighted CG are defined as $e_x = -\bar{x}$ and $e_y = -\bar{y}$:")
-            st.markdown(rf"$$ M_{{x,cg}} = M_{{x,ext}} + (P_w \cdot (-\bar{{y}})) = {summary['mx_ext']:.3f} + ({summary['pw']:.3f} \cdot {-summary['cg_y']:.4f}) = {summary['mx_cg']:.4f} \text{{ Ton-m}} $$")
-            st.markdown(rf"$$ M_{{y,cg}} = M_{{y,ext}} + (P_w \cdot (-\bar{{x}})) = {summary['my_ext']:.3f} + ({summary['pw']:.3f} \cdot {-summary['cg_x']:.4f}) = {summary['my_cg']:.4f} \text{{ Ton-m}} $$")
+            st.markdown("Since the physical column center is located at $(0,0)$, the eccentricities relative to the new stiffness-weighted CG are $e_x = \\bar{x}$ and $e_y = \\bar{y}$. Note the transfer equations carry **opposite signs** on the two terms — this is a direct consequence of the $\\hat{i}\\times\\hat{k}=-\\hat{j}$, $\\hat{j}\\times\\hat{k}=\\hat{i}$ identities (Proof tab, Step 4), which also give $M_{x,cg}=\\sum(R_i y_i)$ but $M_{y,cg}=-\\sum(R_i x_i)$:")
+            st.markdown(rf"$$ M_{{x,cg}} = M_{{x,ext}} - (P_w \cdot \bar{{y}}) = {summary['mx_ext']:.3f} - ({summary['pw']:.3f} \cdot {summary['cg_y']:.4f}) = {summary['mx_cg']:.4f} \text{{ Ton-m}} $$")
+            st.markdown(rf"$$ M_{{y,cg}} = M_{{y,ext}} + (P_w \cdot \bar{{x}}) = {summary['my_ext']:.3f} + ({summary['pw']:.3f} \cdot {summary['cg_x']:.4f}) = {summary['my_cg']:.4f} \text{{ Ton-m}} $$")
 
             st.markdown("#### Step 5: Group Geometrical Properties & Stiffness-Weighted Moments of Inertia ($I_{xx}, I_{yy}, I_{xy}$)")
             st.markdown(r"Where $x_i = x_{actual} - \bar{{x}}$ and $y_i = y_{actual} - \bar{{y}}$:")
@@ -458,23 +481,23 @@ with tab_calc:
             st.markdown("#### Step 6: Detailed Pile Reaction Substitution via Asymmetrical Bending Theory ($R_i$)")
             st.markdown("To ensure complete analytical transparency, the calculation is strictly based on the **Full Generalized Asymmetrical Bending Equation**:")
             
-            st.info(r"$$ R_i = k_i \cdot \left[ \frac{P_w}{\sum k} + \left( \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) y_i + \left( \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) x_i \right] $$")
+            st.info(r"$$ R_i = k_i \cdot \left[ \frac{P_w}{\sum k} + \left( \frac{M_{x,cg} I_{yy} + M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) y_i - \left( \frac{M_{y,cg} I_{xx} + M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) x_i \right] $$")
             
-            st.markdown("To simplify the explicit substitution for each pile, the bracketed terms are first evaluated globally as fundamental coefficients ($A, B$, and $C$):")
+            st.markdown("To simplify the explicit substitution for each pile, the bracketed terms are first evaluated globally as fundamental coefficients ($A, B$, and $C$). Note the model is $R_i = k_i\\cdot[A + B\\cdot y_i - C\\cdot x_i]$ — the $y_i$ and $x_i$ terms carry **opposite signs**, a direct consequence of the $\\hat{i}\\times\\hat{k}=-\\hat{j}$, $\\hat{j}\\times\\hat{k}=\\hat{i}$ identities used in the Proof tab derivation:")
             
             # Compute global coefficients for the entire group
             coef_axial = pw_input / summary['sum_k']
-            coef_mx = (summary['mx_cg'] * summary['iyy'] - summary['my_cg'] * summary['ixy']) / denom_val if denom_val != 0 else 0
-            coef_my = (summary['my_cg'] * summary['ixx'] - summary['mx_cg'] * summary['ixy']) / denom_val if denom_val != 0 else 0
+            coef_mx = (summary['mx_cg'] * summary['iyy'] + summary['my_cg'] * summary['ixy']) / denom_val if denom_val != 0 else 0
+            coef_my = (summary['my_cg'] * summary['ixx'] + summary['mx_cg'] * summary['ixy']) / denom_val if denom_val != 0 else 0
             
             st.markdown("##### 🔸 Global Foundation Coefficients")
             st.markdown(rf"""
             * **Axial Translation Term ($A$):**  
               $$\frac{{P_w}}{{\sum k}} = \frac{{{pw_input:.3f}}}{{{summary['sum_k']:.4f}}} = {coef_axial:.4f}$$
-            * **X-Axis Bending Gradient ($B$):**  
-              $$\frac{{M_{{x,cg}} \cdot I_{{yy}} - M_{{y,cg}} \cdot I_{{xy}}}}{{I_{{xx}}I_{{yy}} - I_{{xy}}^2}} = \frac{{({summary['mx_cg']:.3f} \cdot {summary['iyy']:.4f}) - ({summary['my_cg']:.3f} \cdot {summary['ixy']:.4f})}}{{{denom_val:.6f}}} = {coef_mx:.4f}$$
-            * **Y-Axis Bending Gradient ($C$):**  
-              $$\frac{{M_{{y,cg}} \cdot I_{{xx}} - M_{{x,cg}} \cdot I_{{xy}}}}{{I_{{xx}}I_{{yy}} - I_{{xy}}^2}} = \frac{{({summary['my_cg']:.3f} \cdot {summary['ixx']:.4f}) - ({summary['mx_cg']:.3f} \cdot {summary['ixy']:.4f})}}{{{denom_val:.6f}}} = {coef_my:.4f}$$
+            * **X-Axis Bending Gradient ($B$), added to $y_i$:**  
+              $$\frac{{M_{{x,cg}} \cdot I_{{yy}} + M_{{y,cg}} \cdot I_{{xy}}}}{{I_{{xx}}I_{{yy}} - I_{{xy}}^2}} = \frac{{({summary['mx_cg']:.3f} \cdot {summary['iyy']:.4f}) + ({summary['my_cg']:.3f} \cdot {summary['ixy']:.4f})}}{{{denom_val:.6f}}} = {coef_mx:.4f}$$
+            * **Y-Axis Bending Gradient ($C$), subtracted from $x_i$:**  
+              $$\frac{{M_{{y,cg}} \cdot I_{{xx}} + M_{{x,cg}} \cdot I_{{xy}}}}{{I_{{xx}}I_{{yy}} - I_{{xy}}^2}} = \frac{{({summary['my_cg']:.3f} \cdot {summary['ixx']:.4f}) + ({summary['mx_cg']:.3f} \cdot {summary['ixy']:.4f})}}{{{denom_val:.6f}}} = {coef_my:.4f}$$
             """)
             
             st.markdown("##### 🔸 Individual Pile-by-Pile Explicit Substitution")
@@ -489,7 +512,7 @@ with tab_calc:
                 
                 term1 = coef_axial
                 term2 = coef_mx * yi
-                term3 = coef_my * xi
+                term3 = -coef_my * xi
                 
                 check_symbol = r"\le" if ri <= r_allow else r"\gt"
                 status_text = "PASS (Safe)" if ri <= r_allow else "FAIL (Overloaded)"
@@ -498,10 +521,10 @@ with tab_calc:
                     st.markdown(f"###### 🔹 Pile ID: **{row['Pile_Name']}** ({row['Pile_Type']} Pile)")
                     
                     st.markdown(r"**A. Governing Mathematical Model:**")
-                    st.markdown(r"$$ R_i = k_i \cdot \left[ A + B \cdot y_i + C \cdot x_i \right] $$")
+                    st.markdown(r"$$ R_i = k_i \cdot \left[ A + B \cdot y_i - C \cdot x_i \right] $$")
                     
                     st.markdown(r"**B. Explicit Numerical Substitution:**")
-                    st.markdown(rf"$$ R_{{{row['Pile_Name']}}} = {ki:.3f} \cdot \left[ {coef_axial:.4f} + ({coef_mx:.4f}) \cdot ({yi:.4f}) + ({coef_my:.4f}) \cdot ({xi:.4f}) \right] $$")
+                    st.markdown(rf"$$ R_{{{row['Pile_Name']}}} = {ki:.3f} \cdot \left[ {coef_axial:.4f} + ({coef_mx:.4f}) \cdot ({yi:.4f}) - ({coef_my:.4f}) \cdot ({xi:.4f}) \right] $$")
                     
                     st.markdown(r"**C. Evaluated Component Stresses:**")
                     st.markdown(rf"$$ R_{{{row['Pile_Name']}}} = {ki:.3f} \cdot \left[ {term1:.4f} \text{{ (Axial)}} + ({term2:.4f}) \text{{ (X-Rot)}} + ({term3:.4f}) \text{{ (Y-Rot)}} \right] $$")
