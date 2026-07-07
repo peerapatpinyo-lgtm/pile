@@ -90,43 +90,134 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     return pd.DataFrame(piles), summary
 
 
+import streamlit as st
+import matplotlib.pyplot as plt
+import numpy as np
+
 # ==========================================
-# 2. Proof Tab Rendering Function (With Integrated Diagram & Glossary)
+# 2. Proof Tab Rendering Function (Safe Escape Version)
 # ==========================================
 def render_proof_tab():
     st.header("📐 Rigid Pile Cap: Rigorous Vector Derivation")
-    st.markdown("This section provides an advanced, step-by-step vector mechanics proof that directly links the physical column coordinates to the final Cartesian biaxial bending formula.")
+    st.markdown("This section provides an advanced, step-by-step vector mechanics proof that directly links the position vector $\\vec{r}_i$ to the final Cartesian biaxial bending formula.")
     
     st.divider()
 
-    # --- SECTION: VISUAL DIAGRAM ---
-    st.subheader("📊 Coordinate Layout & Eccentricity Visualized")
-    st.markdown(r"""
-    This diagram illustrates how the position of the column center $(Col_x, Col_y)$ relative to the Pile Group Center of Gravity $(CG_x, CG_y)$ creates the eccentricities ($e_x, e_y$) that induce bending moments.
-    """)
+    st.subheader("Step 1: Coordinate Setup & Eccentricity at CG")
+    st.markdown("Let the origin $(0,0)$ be located at the **Center of Gravity (CG)** of the pile group, meaning $\\sum x_i = 0$ and $\\sum y_i = 0$.")
+    st.markdown("Any external load acting on the column is transferred to this CG, establishing eccentricities ($e_x, e_y$) as shown on the whiteboard:")
+    st.markdown(r"$$ e_x = CG_x - Col_x $$")
+    st.markdown(r"$$ e_y = CG_y - Col_y $$")
+    st.markdown("The net force and moment vectors acting on the pile cap at the CG are defined as:")
+    st.markdown(r"$$ \vec{F}_{ext} = P_w \hat{k} $$")
+    st.markdown(r"$$ \vec{M}_{cg} = M_{x,cg}\hat{i} + M_{y,cg}\hat{j} $$")
+    st.markdown(r"$$\text{Where: } M_{x,cg} = M_{x,ext} + P_w \cdot e_y \quad \text{and} \quad M_{y,cg} = M_{y,ext} + P_w \cdot e_x$$")
+
+    # ==========================================
+    # VISUALIZATION SECTION (MATPLOTLIB)
+    # ==========================================
+    st.markdown("#### 📊 Geometric Mapping Visualization")
+    st.markdown("แผนภาพแสดงระบบพิกัดของฐานราก, เวกเตอร์บอกตำแหน่ง $\\vec{r}_i$ (สีน้ำเงิน) จาก CG ไปยังเสาเข็มแต่ละต้น และระยะเยื้องศูนย์ $e_x, e_y$ (สีเขียว)")
     
-    # Render an elegant ASCII diagram inside a code block for clear visual tracking
-    st.markdown(r"""
-```text
- Y-Axis (Global System)
-   ^
-   |       +-----------------------------------------+
-   |       |               Pile Cap Boundary         |
-   |       |                                         |
-   |       |    Column Center (Col_x, Col_y)         |
-   |       |          [  Column (เสา)  ]             |
-   |       |                 |                       |
-   |       |                 |<------- e_x ------->| |
-   |       |                 |                     | |
-   +-------|-----------------|-------------------(CG)----> X-Axis (Global System)
-   |       |                 |                  (0,0)  
-   |       |                                       |   
-   |       |                                       |   
-   |       |                                      e_y  
-   |       |                                       v   
-   |       +-----------------------------------------+
-   |
- (0,0) Global Origin
+    fig, ax = plt.subplots(figsize=(7, 7))
+
+    # กำหนดพิกัดจำลอง (4 เสาเข็ม)
+    piles_x = [1.5, -1.5, -1.5, 1.5]
+    piles_y = [1.5, 1.5, -1.5, -1.5]
+    cg_x, cg_y = 0, 0
+    col_x, col_y = -0.5, 0.8  # ตำแหน่งสมมติของเสา (Column)
+
+    # วาดเสาเข็ม (Piles)
+    ax.scatter(piles_x, piles_y, s=400, c='lightgray', edgecolors='black', label='Piles', zorder=3)
+    for i, (px, py) in enumerate(zip(piles_x, piles_y)):
+        ax.text(px, py + 0.25, f'Pile {i+1}\n($x_{i+1}, y_{i+1}$)', ha='center', fontsize=10)
+        # วาดเวกเตอร์ r_i (จาก CG ไป Piles)
+        ax.annotate('', xy=(px, py), xytext=(cg_x, cg_y),
+                    arrowprops=dict(arrowstyle='->', color='blue', lw=1.5, alpha=0.6))
+
+    # วาดจุด CG
+    ax.scatter(cg_x, cg_y, s=150, c='red', marker='X', label='CG (0,0)', zorder=4)
+
+    # วาดตำแหน่งเสา (Column Load)
+    ax.scatter(col_x, col_y, s=250, c='orange', marker='s', edgecolors='black', label='Column Load', zorder=4)
+
+    # วาดเส้นบอกระยะเยื้องศูนย์ (Eccentricity)
+    ax.plot([col_x, col_x], [col_y, cg_y], color='green', linestyle='--', zorder=2)
+    ax.plot([col_x, cg_x], [cg_y, cg_y], color='green', linestyle='--', zorder=2)
+    
+    ax.text(col_x - 0.2, col_y / 2, '$e_y$', color='green', fontsize=12, fontweight='bold')
+    ax.text(col_x / 2, cg_y - 0.2, '$e_x$', color='green', fontsize=12, fontweight='bold')
+
+    # ตกแต่งกราฟ
+    ax.axhline(0, color='black', linewidth=1, ls='-', alpha=0.3)
+    ax.axvline(0, color='black', linewidth=1, ls='-', alpha=0.3)
+    ax.set_aspect('equal')
+    ax.set_xlim(-2.5, 2.5)
+    ax.set_ylim(-2.5, 2.5)
+    ax.set_xlabel('X - Axis (m)', fontsize=11)
+    ax.set_ylabel('Y - Axis (m)', fontsize=11)
+    ax.set_title('Top View: Rigid Pile Cap Coordinate System', fontsize=14, pad=15)
+    ax.legend(loc='upper right', framealpha=0.9)
+    ax.grid(True, linestyle=':', alpha=0.6)
+
+    # เรนเดอร์กราฟลง Streamlit
+    st.pyplot(fig)
+    # ==========================================
+
+    st.subheader("Step 2: Vector Kinematics (Rigid Cap Compatibility)")
+    st.markdown("According to the rigid pile cap assumption, the cap does not deform internally; it only translates vertically by $w_0$ and rotates as a rigid plane. We define the rotation vector $\\vec{\\theta}$ about the CG as:")
+    st.markdown(r"$$ \vec{\theta} = \theta_x \hat{i} + \theta_y \hat{j} $$")
+    st.markdown("The position vector $\\vec{r}_i$ pointing from the CG to any specific pile $i$ is defined as:")
+    st.markdown(r"$$ \vec{r}_i = x_i \hat{i} + y_i \hat{j} $$")
+    st.markdown("The total vertical displacement ($w_i$) of pile $i$ is the sum of uniform translation and the vertical component resulting from the rotation vector cross product ($\\vec{\\theta} \\times \\vec{r}_i$):")
+    st.markdown(r"$$ w_i = w_0 + (\vec{\theta} \times \vec{r}_i) \cdot \hat{k} $$")
+    st.markdown("Evaluating the cross product explicitly:")
+    st.markdown(r"$$ \vec{\theta} \times \vec{r}_i = (\theta_x \hat{i} + \theta_y \hat{j}) \times (x_i \hat{i} + y_i \hat{j}) = (\theta_x y_i - \theta_y x_i)\hat{k} $$")
+    st.markdown("Taking the dot product with $\\hat{k}$ yields the linear kinematic displacement equation:")
+    st.markdown(r"$$ w_i = w_0 + \theta_x y_i - \theta_y x_i $$")
+
+    st.subheader("Step 3: Constitutive Force-Displacement Relationship")
+    st.markdown("Assuming all piles behave as identical linear elastic springs with an axial stiffness $k$, the vertical reaction force vector $\\vec{R}_i$ at pile $i$ is:")
+    st.markdown(r"$$ \vec{R}_i = R_i \hat{k} = k \cdot w_i \hat{k} $$")
+    st.markdown(r"$$ R_i = k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \quad \text{--- (Eq. 1)} $$")
+
+    st.subheader("Step 4: Vector Static Equilibrium")
+    st.markdown("The summation of all internal pile reactions must satisfy both force and moment equilibrium against external actions.")
+    
+    st.markdown("#### A. Vertical Force Equilibrium")
+    st.markdown(r"$$ \sum \vec{R}_i = \vec{F}_{ext} \implies \sum R_i = P_w $$")
+    st.markdown(r"$$ \sum \left[ k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \right] = P_w $$")
+    st.markdown("Since the origin is at the CG, $\\sum x_i = 0$ and $\\sum y_i = 0$. The equation simplifies to:")
+    st.markdown(r"$$ n \cdot (k w_0) = P_w \implies k w_0 = \frac{P_w}{n} \quad \text{--- (Eq. 2)} $$")
+
+    st.markdown("#### B. Moment Equilibrium via Cross Product")
+    st.markdown("The external net moment vector at the CG must equal the sum of moments generated by the pile reactions:")
+    st.markdown(r"$$ \vec{M}_{cg} = \sum (\vec{r}_i \times \vec{R}_i) $$")
+    st.markdown(r"$$ M_{x,cg}\hat{i} + M_{y,cg}\hat{j} = \sum \left[ (x_i \hat{i} + y_i \hat{j}) \times (R_i \hat{k}) \right] $$")
+    st.markdown("Using standard unit vector cross products ($\\hat{i} \\times \\hat{k} = -\\hat{j}$ and $\\hat{j} \\times \\hat{k} = \\hat{i}$):")
+    st.markdown(r"$$ M_{x,cg}\hat{i} + M_{y,cg}\hat{j} = \sum (R_i y_i)\hat{i} - \sum (R_i x_i)\hat{j} $$")
+    
+    st.markdown("By equating the orthogonal vector components, we obtain two scalar equations:")
+    st.markdown(r"$$ M_{x,cg} = \sum R_i y_i \quad \text{and} \quad M_{y,cg} = -\sum R_i x_i $$")
+
+    st.subheader("Step 5: Solving for Bending Stiffness Constants")
+    st.markdown("Substitute the general expression for $R_i$ (Eq. 1) into the scalar moment equations, assuming principal axes of symmetry ($\\sum x_i y_i = 0$):")
+    st.markdown(r"$$ M_{x,cg} = \sum \left[ k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \right] y_i = k \theta_x \sum y_i^2 $$")
+    st.markdown(r"$$ M_{y,cg} = -\sum \left[ k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \right] x_i = k \theta_y \sum x_i^2 $$")
+    st.markdown("By defining the Pile Group Moments of Inertia as $I_{xx} = \\sum y_i^2$ and $I_{yy} = \\sum x_i^2$, we solve for the rotational terms:")
+    st.markdown(r"$$ k \theta_x = \frac{M_{x,cg}}{I_{xx}} \quad \text{--- (Eq. 3)} $$")
+    st.markdown(r"$$ k \theta_y = \frac{M_{y,cg}}{I_{yy}} \quad \text{--- (Eq. 4)} $$")
+
+    st.subheader("Step 6: Final Linear Superposition")
+    st.markdown("Substituting the solved equilibrium constants (Eq. 2, Eq. 3, and Eq. 4) back into the pile reaction equation (Eq. 1) yields the final master formula:")
+    
+    st.success("🎯 **Final Master Equation:**")
+    st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
+    
+    st.divider()
+    st.markdown("### 📌 Summary of Geometric Mapping")
+    st.markdown("- The position vector **$\\vec{r}_i = x_i \\hat{i} + y_i \\hat{j}$** physically maps each pile's coordinates relative to the CG.")
+    st.markdown("- The vector cross product elegantly demonstrates why $y_i$ couples with $I_{xx}$ (rotation about the X-axis) and $x_i$ couples with $I_{yy}$ (rotation about the Y-axis) without relying on arbitrary assumptions.")
     
 # ==========================================
 # 3. Streamlit UI and Output Rendering
