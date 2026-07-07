@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.patches import FancyArrowPatch
 import math
 
-# ==========================================
+# =========================================================================
 # 1. Engineering Calculation Core (Upgraded for Asymmetry & Stiffness)
-# ==========================================
+# =========================================================================
 def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacing, piles_df):
     """
     Calculates pile reactions using Generalized Asymmetrical Bending Theory
@@ -24,7 +26,7 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     safe_load_main = q_main / fs if fs > 0 else 0
     safe_load_micro = q_micro / fs if fs > 0 else 0
 
-    # 1. Stiffness Assumption: Approximate stiffness ratio based on capacity
+    # 1. Stiffness Assumption: Approximate stiffness ratio based on ultimate capacity
     k_main = 1.0
     k_micro = q_micro / q_main if q_main > 0 else 0.5 
 
@@ -37,7 +39,7 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
         p['k_factor'] = k_main if p['Pile_Type'] == 'Main' else k_micro
         sum_k += p['k_factor']
 
-    # Spacing Check
+    # Spacing Verification Check
     spacing_issues = []
     for i in range(n):
         for j in range(i + 1, n):
@@ -55,19 +57,19 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     cg_x = sum(p['k_factor'] * p['x_actual'] for p in piles) / sum_k
     cg_y = sum(p['k_factor'] * p['y_actual'] for p in piles) / sum_k
 
-    # 3. Eccentric Moments (Column is at 0,0 -> relative to CG is -cg_x, -cg_y)
+    # 3. Eccentric Moments (Column center is at 0,0 -> relative to CG is -cg_x, -cg_y)
     ecc_mx = pw * (-cg_y)
     ecc_my = pw * (-cg_x)
     mx_cg = mx_ext + ecc_mx
     my_cg = my_ext + ecc_my
 
-    # 4. Generalized Group Inertias (including I_xy)
+    # 4. Generalized Group Inertias (including asymmetric product of inertia I_xy)
     ixx = iyy = ixy = 0
     for p in piles:
         p['x_i'] = p['x_actual'] - cg_x  
         p['y_i'] = p['y_actual'] - cg_y  
         
-        # Multiply by stiffness factor to scale contribution
+        # Multiply by relative stiffness factor to scale structural contribution
         ixx += p['k_factor'] * (p['y_i'] ** 2)
         iyy += p['k_factor'] * (p['x_i'] ** 2)
         ixy += p['k_factor'] * (p['x_i'] * p['y_i'])
@@ -77,17 +79,17 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     # 5. Pile Reaction Calculation (Asymmetrical Bending Formula)
     overall_load_passed = True
     for p in piles:
-        # Axial translation term
+        # Axial translation component
         term1 = pw / sum_k
         
-        # Rotation terms (coupled)
+        # Biaxial rotational components (coupled via cross product of inertia)
         if denom != 0:
             term2 = ((mx_cg * iyy - my_cg * ixy) / denom) * p['y_i']
             term3 = ((my_cg * ixx - mx_cg * ixy) / denom) * p['x_i']
         else:
             term2 = term3 = 0
             
-        # Final load = Stiffness * (Displacement)
+        # Total force reaction = Relative Stiffness * (Combined Unit Displacement)
         p['Ri'] = p['k_factor'] * (term1 + term2 + term3)
         
         if p['Ri'] > p['Allowable_Load']:
@@ -111,14 +113,10 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     
     return pd.DataFrame(piles), summary
 
-import streamlit as st
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from matplotlib.patches import FancyArrowPatch
 
-# ==========================================
+# =========================================================================
 # 2. Proof Tab Rendering Function (Refined Scale & Full Details)
-# ==========================================
+# =========================================================================
 def render_proof_tab():
     st.header("📐 Rigid Pile Cap: Rigorous Vector Derivation")
     st.markdown("This section provides an advanced, step-by-step vector mechanics proof that directly links the position vector $\\vec{r}_i$ to the final Cartesian biaxial bending formula.")
@@ -147,7 +145,7 @@ def render_proof_tab():
 
     with col2:
         # --- Figure 1: Geometric Mapping & Equivalent Forces ---
-        # ปรับสเกลให้อยู่ในขนาดพอดี (3.8 x 3.8) ดีเทลครบ ตัวหนังสือไม่เบียด
+        # Optimized scale (3.8 x 3.8) to cleanly display annotations without crowding
         fig1, ax1 = plt.subplots(figsize=(3.8, 3.8))
 
         cap = patches.Rectangle((-2.5, -2.5), 5.0, 5.0, linewidth=1.2, edgecolor='#2c3e50', facecolor='#f8f9fa', zorder=1)
@@ -163,7 +161,7 @@ def render_proof_tab():
         cg_x, cg_y = 0, 0
         col_x, col_y = -0.8, 1.2
 
-        # วาดเสาเข็มพร้อมดึง Detail พิกัด (x, y) กลับมาแสดง
+        # Render layout piles and display mapping coordinates (x, y)
         for i, (px, py) in enumerate(zip(piles_x, piles_y)):
             pile = patches.Circle((px, py), 0.25, linewidth=1, edgecolor='#34495e', facecolor='#bdc3c7', zorder=3)
             ax1.add_patch(pile)
@@ -175,7 +173,7 @@ def render_proof_tab():
         ax1.plot(col_x, col_y, marker='x', color='black', markersize=4, markeredgewidth=1, zorder=6)
         ax1.text(col_x, col_y - 0.35, r'$P_w$', ha='center', fontsize=7, fontweight='bold', color='#d35400', zorder=6)
 
-        # วาดภายนอกโมเมนต์ที่เสา (Mx,ext , My,ext)
+        # Plot external moments at the column head (Mx,ext, My,ext)
         mx_ext_arrow = FancyArrowPatch((col_x + 0.25, col_y + 0.15), (col_x + 0.25, col_y - 0.15), 
                                        connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=2.5,head_length=2.5", 
                                        color='#8e44ad', lw=0.8, zorder=6)
@@ -283,7 +281,6 @@ def render_proof_tab():
     # --- STEP 3 ---
     st.subheader("Step 3: Constitutive Force-Displacement Relationship")
     st.markdown("Assuming all piles behave as identical linear elastic springs with an axial stiffness $k$, the reaction force is directly proportional to the vertical displacement (Hooke's Law):")
-    # เพิ่มสมการหลักตรงนี้ตามที่ต้องการเรียบร้อยครับ
     st.markdown(r"$$ R_i = k \cdot w_i $$")
     st.markdown("Expressing the vertical reaction force vector $\\vec{R}_i$ at pile $i$ in vector form:")
     st.markdown(r"$$ \vec{R}_i = R_i \hat{k} = (k \cdot w_i) \hat{k} $$")
@@ -325,36 +322,37 @@ def render_proof_tab():
     st.success("🎯 **Final Master Equation:**")
     st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
     
-    # --- STEP 7 (NEW) ---
-    st.subheader("Step 7: Note on As-Built Pile Deviation (เสาเข็มหนีศูนย์)")
+    # --- STEP 7 ---
+    st.subheader("Step 7: Analysis of As-Built Pile Deviation")
     
     st.warning("⚠️ **Limitation of the Simplified Formula**")
-    st.markdown("The master equation derived in Step 6 assumes that the pile group is perfectly symmetrical, meaning the product of inertia is zero ($I_{xy} = \sum x_i y_i = 0$).")
+    st.markdown("The master equation derived in Step 6 assumes that the pile group layout is perfectly symmetrical, meaning the product of inertia is zero ($I_{xy} = \sum x_i y_i = 0$).")
     
-    st.markdown("If piles deviate from their intended coordinates during construction (**Pile Deviation**):")
-    st.markdown("- **1. CG Shift:** The physical center of gravity of the pile group shifts. The origin $(0,0)$ must be re-established, which consequently alters the load eccentricities ($e_x, e_y$).")
-    st.markdown("- **2. Asymmetrical Bending:** The group may lose symmetry ($I_{xy} \\neq 0$). The rotation constants (Eq. 3 and Eq. 4) become coupled, requiring the generalized asymmetrical bending formula:")
+    st.markdown("If piles deviate significantly from their intended locations during construction (**As-Built Deviation**):")
+    st.markdown("- **1. Centroidal Shift:** The physical center of gravity of the group shifts. The coordinate origin must be re-established, which consequently changes the load eccentricities ($e_x, e_y$).")
+    st.markdown("- **2. Asymmetrical Bending Induction:** The group structure loses its axis of symmetry ($I_{xy} \\neq 0$). The rotation parameters (Eq. 3 and Eq. 4) become strongly coupled, requiring the generalized asymmetrical bending equation:")
     
-    # สมการแบบเต็มกรณีเข็มเยื้องจนเสียสมมาตร
+    # Generalized equation for highly asymmetrical pile layouts
     st.markdown(r"$$ R_i = \frac{P_w}{n} + \left[ \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] y_i + \left[ \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] x_i $$")
 
-    
     st.divider()
     st.markdown("### 📌 Summary of Geometric Mapping")
-    st.markdown("- The position vector **$\\vec{r}_i = x_i \hat{i} + y_i \hat{j}$** physically maps each pile's coordinates relative to the CG.")
-    st.markdown("- The vector cross product elegantly demonstrates why $y_i$ couples with $I_{xx}$ (rotation about the X-axis) and $x_i$ couples with $I_{yy}$ (rotation about the Y-axis) without relying on arbitrary assumptions.")
+    st.markdown("- The position vector **$\\vec{r}_i = x_i \hat{i} + y_i \hat{j}$** physically maps each pile's coordinates relative to the group's elastic centroid.")
+    st.markdown("- The vector cross product elegantly demonstrates why $y_i$ couples with $I_{xx}$ (rotation about the X-axis) and $x_i$ couples with $I_{yy}$ (rotation about the Y-axis) without relying on arbitrary layout assumptions.")
 
+
+# =========================================================================
 # 3. Streamlit UI and Output Rendering
-# ==========================================
+# =========================================================================
 st.set_page_config(page_title="Advanced Pile Redesign System", layout="wide")
 
 st.title("🏗️ Pile Deviation, Mitigation & Spacing Analysis Report")
 st.markdown("Professional foundation redesign tool featuring dual-capacity checking, minimum spacing verification, and a **High-Detail Calculation Report**.")
 
-# 🌟 สร้างระบบ Tabs แบ่งหน้า
+# Create Tab Layout
 tab_calc, tab_proof = st.tabs(["🧮 Calculation & Mitigation", "📐 Formula Derivation (Proof)"])
 
-# ----------------- TAB 1: หน้าคำนวณ (ถูกเว้นวรรคให้อยู่ในบล็อก Tab นี้) -----------------
+# ----------------- TAB 1: Calculation & Mitigation -----------------
 with tab_calc:
     st.subheader("1. Design Parameters Input")
     col_p, col_mx, col_my = st.columns(3)
@@ -409,9 +407,9 @@ with tab_calc:
             
             with status_col1:
                 if summary['overall_load_passed']:
-                    st.success("🟢 **LOAD CHECK: PASSED** - All piles are operating within allowable capacities.")
+                    st.success("🟢 **LOAD CHECK: PASSED** - All piles are operating within allowable structural capacities.")
                 else:
-                    st.error("🔴 **LOAD CHECK: FAILED** - One or more piles exceed safe capacity limits!")
+                    st.error("🔴 **LOAD CHECK: FAILED** - One or more piles exceed safe allowable capacity limits!")
                     
             with status_col2:
                 if summary['overall_spacing_passed']:
@@ -421,13 +419,13 @@ with tab_calc:
 
             st.divider()
 
-           # ==========================================
-            # 2.2 HIGH-DETAIL CALCULATION SHEET (Upgraded to Asymmetrical & Stiffness-Weighted)
+            # ==========================================
+            # 2.2 HIGH-DETAIL CALCULATION SHEET (Asymmetrical & Stiffness-Weighted)
             # ==========================================
             st.subheader("📝 Engineering Step-by-Step Calculation Sheet")
             
             st.markdown("#### Step 1: Geotechnical Allowable Pile Capacities ($R_{allow}$)")
-            st.markdown("Allowable safe loads computed based on Factor of Safety (FS):")
+            st.markdown("Allowable safe loads computed based on the assigned Factor of Safety (FS):")
             st.markdown(rf"$$ R_{{allow, Main}} = \frac{{Q_{{ult, Main}}}}{{FS}} = \frac{{{summary['q_main']:.3f}}}{{{summary['fs']:.1f}}} = {summary['safe_main']:.3f} \text{{ Tons}} $$")
             st.markdown(rf"$$ R_{{allow, Micro}} = \frac{{Q_{{ult, Micro}}}}{{FS}} = \frac{{{summary['q_micro']:.3f}}}{{{summary['fs']:.1f}}} = {summary['safe_micro']:.3f} \text{{ Tons}} $$")
 
@@ -437,13 +435,13 @@ with tab_calc:
             st.table(df_actuals.style.format({col: '{:.4f}' for col in df_actuals.columns if col not in ['Pile_Name', 'Pile_Type']}))
 
             st.markdown("#### Step 3: Stiffness-Weighted Center of Gravity (CG) of the Global Pile Group")
-            st.markdown("ในการคำนวณกรณีที่ขนาดเสาเข็มไม่เท่ากัน จะต้องใช้ค่าความแข็งเกร็งสัมพัทธ์ ($k_{factor}$) ในการถ่วงน้ำหนักหาตำแหน่งจุดหมุนทางวิศวกรรม:")
+            st.markdown("For configurations with mixed pile types/capacities, the relative stiffness factor ($k_{factor}$) is utilized to calculate the stiffness-weighted elastic center of rotation:")
             st.markdown(rf"$$ \bar{{x}} = \frac{{\sum (k_{{factor}} \cdot x_{{actual}})}}{{\sum k_{{factor}}}} = {summary['cg_x']:.4f} \text{{ m}} $$")
             st.markdown(rf"$$ \bar{{y}} = \frac{{\sum (k_{{factor}} \cdot y_{{actual}})}}{{\sum k_{{factor}}}} = {summary['cg_y']:.4f} \text{{ m}} $$")
-            st.caption(f"หมายเหตุ: Total Relative Stiffness ($\sum k$) = {summary['sum_k']:.4f}")
+            st.caption(f"Note: Total Relative Stiffness ($\sum k$) = {summary['sum_k']:.4f}")
             
             st.markdown("#### Step 4: Total Eccentric Moments about New Shifted Centroid ($M_{x,cg}, M_{y,cg}$)")
-            st.markdown("เนื่องจากจุดศูนย์กลางเสาตอม่ออยู่ที่พิกัด $(0,0)$ ระยะเยื้องศูนย์เมื่อเทียบกับจุด CG ใหม่จึงเท่ากับ $(- \bar{{x}}, - \bar{{y}})$:")
+            st.markdown("Since the physical column center is located at $(0,0)$, the resulting eccentricities relative to the new stiffness-weighted CG are defined as $e_x = -\bar{x}$ and $e_y = -\bar{y}$:")
             st.markdown(rf"$$ M_{{x,cg}} = M_{{x,ext}} + (P_w \cdot (-\bar{{y}})) = {summary['mx_ext']:.3f} + ({summary['pw']:.3f} \cdot {-summary['cg_y']:.4f}) = {summary['mx_cg']:.4f} \text{{ Ton-m}} $$")
             st.markdown(rf"$$ M_{{y,cg}} = M_{{y,ext}} + (P_w \cdot (-\bar{{x}})) = {summary['my_ext']:.3f} + ({summary['pw']:.3f} \cdot {-summary['cg_x']:.4f}) = {summary['my_cg']:.4f} \text{{ Ton-m}} $$")
 
@@ -459,20 +457,20 @@ with tab_calc:
 
             st.markdown(rf"$$ I_{{xx}} = \sum k_{{factor}} \cdot (y_i)^2 = {summary['ixx']:.4f} \text{{ m}}^2 $$")
             st.markdown(rf"$$ I_{{yy}} = \sum k_{{factor}} \cdot (x_i)^2 = {summary['iyy']:.4f} \text{{ m}}^2 $$")
-            st.markdown(rf"$$ I_{{xy}} = \sum k_{{factor}} \cdot (x_i \cdot y_i) = {summary['ixy']:.4f} \text{{ m}}^2 \quad \color{{red}}{{\text{{(Product of Inertia จากการเยื้องศูนย์)}}}} $$")
+            st.markdown(rf"$$ I_{{xy}} = \sum k_{{factor}} \cdot (x_i \cdot y_i) = {summary['ixy']:.4f} \text{{ m}}^2 \quad \color{{red}}{{\text{{(Product of Inertia due to structural asymmetry)}}}} $$")
             
             denom_val = (summary['ixx'] * summary['iyy']) - (summary['ixy'] ** 2)
-            st.markdown(rf"$$ \text{{Denominator Constraint (Denominator)}} = I_{{xx}}I_{{yy}} - I_{{xy}}^2 = {denom_val:.6f} $$")
+            st.markdown(rf"$$ \text{{Denominator Constraint (Deterministic Demanding)}} = I_{{xx}}I_{{yy}} - I_{{xy}}^2 = {denom_val:.6f} $$")
             
             st.markdown("#### Step 6: Detailed Pile Reaction Substitution via Asymmetrical Bending Theory ($R_i$)")
-            st.markdown(r"$$ R_i = k_{factor} \cdot \left[ \frac{P_w}{\sum k} + \left( \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] y_i + \left[ \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] x_i \right) \le R_{allow} $$")
+            st.markdown(r"$$ R_i = k_{factor} \cdot \left[ \frac{P_w}{\sum k} + \left( \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) y_i + \left( \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) x_i \right] \le R_{allow} $$")
             
             st.markdown("**Complete Numerical Substitution per Individual Pile:**")
             for idx, row in df_res.iterrows():
                 check_symbol = r"\le" if row['Ri'] <= row['Allowable_Load'] else r"\gt"
                 status_latex = r"\text{ [OK - PASSED]}" if row['Ri'] <= row['Allowable_Load'] else r"\text{ [NG - OVERLOADED]}"
                 
-                # คำนวณพจน์ย่อยมาแสดงใน LaTeX ให้วิศวกรตรวจสอบตัวเลขได้ง่ายขึ้น
+                # Compute sub-terms to display clear numerical components for engineering verification
                 term1_val = pw_input / summary['sum_k']
                 term2_val = ((summary['mx_cg'] * summary['iyy'] - summary['my_cg'] * summary['ixy']) / denom_val) * row['y_i'] if denom_val != 0 else 0
                 term3_val = ((summary['my_cg'] * summary['ixx'] - summary['mx_cg'] * summary['ixy']) / denom_val) * row['x_i'] if denom_val != 0 else 0
@@ -572,6 +570,6 @@ with tab_calc:
         else:
             st.warning("Please add at least one pile to the coordinate table.")
 
-# ----------------- TAB 2: หน้าพิสูจน์สูตร (แสดงผลใน Tab ถัดไป) -----------------
+# ----------------- TAB 2: Formula Derivation (Proof) -----------------
 with tab_proof:
     render_proof_tab()
