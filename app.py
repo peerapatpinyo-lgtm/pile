@@ -90,66 +90,53 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     return pd.DataFrame(piles), summary
 
 # ==========================================
-# 2. Proof Tab Rendering Function (Updated)
+# 2. Proof Tab Rendering Function
 # ==========================================
 def render_proof_tab():
-    st.header("📐 Rigid Pile Cap: General Formula Derivation (Proof)")
-    st.markdown("Detailed step-by-step derivation of the general pile reaction formula under combined axial load and biaxial bending, assuming a **Rigid Pile Cap**.")
+    st.header("📐 Rigid Pile Cap: Formula Derivation (Proof)")
+    st.markdown("Derivation of the pile reaction formula based on the **Rigid Pile Cap** assumption, following the vector and moment equilibrium logic shown on the whiteboard, extended to biaxial bending.")
     
     st.divider()
 
-    st.subheader("1. Fundamental Assumptions")
-    st.markdown("""
-* **Rigid Pile Cap:** The pile cap is infinitely stiff and does not bend or deform. It only translates and rotates as a rigid planar body.
-* **Elastic Piles:** All piles behave identically as linearly elastic springs with the same axial stiffness ($k$).
-* **Centroidal Axis:** The origin $(0,0)$ of the coordinate system is located at the elastic center (Center of Gravity, CG) of the pile group. Therefore, $\sum x_i = 0$ and $\sum y_i = 0$.
-* **Symmetry:** The product of inertia is assumed to be zero ($\sum x_i y_i = 0$), meaning the X and Y axes act as principal axes.
-""")
-
-    st.subheader("2. Kinematics (Displacement Compatibility)")
-    st.markdown("When the rigid cap is subjected to a vertical load and moments, it undergoes a uniform vertical translation ($w_0$) and rotations about the X-axis ($\theta_x$) and Y-axis ($\theta_y$).")
-    st.markdown("The vertical displacement ($w_i$) of any pile $i$ located at coordinate $(x_i, y_i)$ relative to the CG is given by:")
-    st.markdown(r"$$ w_i = w_0 + \theta_x \cdot y_i + \theta_y \cdot x_i $$")
+    st.subheader("1. Vectors & Setup")
+    st.markdown("Let $\\vec{r}_i$ be the position vector of pile $i$ from the Center of Gravity (CG), and $\\vec{M}_R$ be the resultant moment at the CG.")
+    st.markdown(r"$$ \vec{r}_1 = x_1\hat{i} + y_1\hat{j} $$")
+    st.markdown(r"$$ \vec{r}_2 = x_2\hat{i} + y_2\hat{j} $$")
+    st.markdown(r"$$ \vec{M}_R = M_x\hat{i} + M_y\hat{j} $$")
     
-    st.subheader("3. Force-Displacement Relationship")
-    st.markdown("Since the piles act as linear springs with stiffness $k$, the reaction force $R_i$ at pile $i$ is proportional to its displacement:")
-    st.markdown(r"$$ R_i = k \cdot w_i = k(w_0 + \theta_x \cdot y_i + \theta_y \cdot x_i) $$")
-    st.markdown(r"$$ R_i = k w_0 + (k \theta_x) y_i + (k \theta_y) x_i \quad \text{--- (Eq. 1)} $$")
-
-    st.subheader("4. Global Static Equilibrium")
-    st.markdown("The internal pile reactions must perfectly balance the external applied forces and moments.")
-
-    st.markdown("#### A. Vertical Force Equilibrium ($\sum F_z = P_w$)")
-    st.markdown(r"$$ \sum R_i = P_w $$")
-    st.markdown(r"$$ \sum [k w_0 + (k \theta_x) y_i + (k \theta_y) x_i] = P_w $$")
-    st.markdown(r"Since $k w_0$ is constant, and $\sum y_i = 0$ and $\sum x_i = 0$ (because the origin is at the CG):")
-    st.markdown(r"$$ n \cdot (k w_0) + k \theta_x(0) + k \theta_y(0) = P_w $$")
-    st.markdown(r"$$ k w_0 = \frac{P_w}{n} \quad \text{--- (Eq. 2)} $$")
-
-    st.markdown("#### B. Moment Equilibrium about X-axis ($\sum M_x = M_{x,cg}$)")
-    st.markdown(r"$$ \sum (R_i \cdot y_i) = M_{x,cg} $$")
-    st.markdown(r"Substitute $R_i$ from Eq. 1:")
-    st.markdown(r"$$ \sum [k w_0 \cdot y_i + (k \theta_x) y_i^2 + (k \theta_y) x_i y_i] = M_{x,cg} $$")
-    st.markdown(r"Since $\sum y_i = 0$ and $\sum x_i y_i = 0$:")
-    st.markdown(r"$$ k w_0(0) + k \theta_x \sum y_i^2 + k \theta_y(0) = M_{x,cg} $$")
-    st.markdown(r"Let $I_{xx} = \sum y_i^2$ (Equivalent Moment of Inertia of the pile group about the X-axis):")
-    st.markdown(r"$$ k \theta_x \cdot I_{xx} = M_{x,cg} \implies k \theta_x = \frac{M_{x,cg}}{I_{xx}} \quad \text{--- (Eq. 3)} $$")
-
-    st.markdown("#### C. Moment Equilibrium about Y-axis ($\sum M_y = M_{y,cg}$)")
-    st.markdown(r"$$ \sum (R_i \cdot x_i) = M_{y,cg} $$")
-    st.markdown(r"Substitute $R_i$ from Eq. 1:")
-    st.markdown(r"$$ \sum [k w_0 \cdot x_i + (k \theta_x) x_i y_i + (k \theta_y) x_i^2] = M_{y,cg} $$")
-    st.markdown(r"Since $\sum x_i = 0$ and $\sum x_i y_i = 0$:")
-    st.markdown(r"$$ k w_0(0) + k \theta_x(0) + k \theta_y \sum x_i^2 = M_{y,cg} $$")
-    st.markdown(r"Let $I_{yy} = \sum x_i^2$ (Equivalent Moment of Inertia of the pile group about the Y-axis):")
-    st.markdown(r"$$ k \theta_y \cdot I_{yy} = M_{y,cg} \implies k \theta_y = \frac{M_{y,cg}}{I_{yy}} \quad \text{--- (Eq. 4)} $$")
-
-    st.subheader("5. Final Superposition Equation")
-    st.markdown("Substitute the solved displacement constants (Eq. 2, Eq. 3, and Eq. 4) back into the initial pile reaction equation (Eq. 1):")
-    st.markdown(r"$$ R_i = \underbrace{\frac{P_w}{n}}_{\text{Pure Axial Load}} + \underbrace{\frac{M_{x,cg} \cdot y_i}{I_{xx}}}_{\text{Bending about X-axis}} + \underbrace{\frac{M_{y,cg} \cdot x_i}{I_{yy}}}_{\text{Bending about Y-axis}} $$")
+    st.subheader("2. Moment Equilibrium")
+    st.markdown("The sum of the internal resisting moments generated by the pile forces ($P_i$) multiplied by their distance from the centroid ($r_i$) must equal the external resultant moment ($M_R$).")
+    st.markdown(r"$$ \sum (P_i \cdot r_i) = M_R $$")
+    st.markdown(r"$$ P_1 \cdot r_1 + P_2 \cdot r_2 + \dots + P_n \cdot r_n = M_R $$")
     
-    st.divider()
-    st.success("🎯 **Q.E.D. (Quod Erat Demonstrandum) - The biaxial bending pile reaction formula is successfully derived.**")
+    st.subheader("3. Rigid Cap Compatibility Condition")
+    st.markdown("Assuming a perfectly rigid pile cap, the deformation of each pile is proportional to its distance from the neutral axis. Therefore, the force $P_i$ is directly proportional to the radial distance $r_i$.")
+    st.markdown(r"$$ \frac{P_1}{r_1} = \frac{P_2}{r_2} = \dots = \frac{P_n}{r_n} = \text{constant} $$")
+    st.markdown("Expressing the forces of other piles in terms of $P_1$:")
+    st.markdown(r"$$ P_2 = \frac{r_2}{r_1} \cdot P_1, \quad P_3 = \frac{r_3}{r_1} \cdot P_1, \quad \dots $$")
+    
+    st.subheader("4. Substitution into Equilibrium Equation")
+    st.markdown("Substitute the relations from Step 3 back into the moment equilibrium equation from Step 2:")
+    st.markdown(r"$$ P_1 \frac{r_1^2}{r_1} + P_1 \frac{r_2^2}{r_1} + P_1 \frac{r_3^2}{r_1} + \dots + P_1 \frac{r_n^2}{r_1} = M_R $$")
+    st.markdown(r"Factoring out the common term $\frac{P_1}{r_1}$:")
+    st.markdown(r"$$ \frac{P_1}{r_1} \sum r_i^2 = M_R $$")
+    st.markdown("Rearranging to solve for the bending reaction force on pile 1 ($P_1$):")
+    st.markdown(r"$$ P_1 = \frac{M_R \cdot r_1}{\sum r_i^2} \implies P_i = \frac{M_R \cdot r_i}{\sum r_i^2} $$")
+
+    st.subheader("5. Extension to Cartesian Coordinates (Biaxial Bending)")
+    st.markdown("By projecting the radial distance $r_i$ onto the Cartesian X and Y axes, we separate the bending into two orthogonal components:")
+    st.markdown(r"* **Moment about X-axis ($M_{x,cg}$):** Causes forces proportional to the $y$-distance. The pile group's moment of inertia about the X-axis is $I_{xx} = \sum y_i^2$.")
+    st.markdown(r"* **Moment about Y-axis ($M_{y,cg}$):** Causes forces proportional to the $x$-distance. The pile group's moment of inertia about the Y-axis is $I_{yy} = \sum x_i^2$.")
+    
+    st.markdown("Thus, the localized bending forces are:")
+    st.markdown(r"$$ P_{i,x} = \frac{M_{x,cg} \cdot y_i}{I_{xx}}, \quad P_{i,y} = \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
+
+    st.subheader("6. Final Superposition Equation")
+    st.markdown("The total reaction force on any individual pile ($R_i$) is the algebraic sum of the **uniform axial compression** ($\frac{P_w}{n}$) and the **biaxial bending contributions**.")
+    
+    st.info(r"💡 **Total Working Load:** $P_w$ | **Total Piles:** $n$")
+    
+    st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
 
 
 # ==========================================
