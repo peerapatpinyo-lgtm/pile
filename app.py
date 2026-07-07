@@ -95,7 +95,7 @@ import matplotlib.patches as patches
 from matplotlib.patches import FancyArrowPatch
 
 # ==========================================
-# 2. Proof Tab Rendering Function (Safe Escape Version)
+# 2. Proof Tab Rendering Function (Safe Escape & Full Version)
 # ==========================================
 def render_proof_tab():
     st.header("📐 Rigid Pile Cap: Rigorous Vector Derivation")
@@ -103,159 +103,201 @@ def render_proof_tab():
     
     st.divider()
 
-    # --- STEP 1: MOMENT TRANSFER ---
-    st.subheader("Step 1: Coordinate Setup & Equivalent Moment Transfer")
+    # --- STEP 1 ---
+    st.subheader("Step 1: Coordinate Setup & Eccentricity at CG")
     
-    col1, col2 = st.columns([1, 1.2]) 
+    col1, col2 = st.columns([1.1, 1.2]) 
     
     with col1:
-        st.markdown("เมื่อแรงภายนอกกระทำที่ตำแหน่งเสา ($Col_x, Col_y$) เราต้องทำการย้ายแรง (Force Transfer) มาที่จุดศูนย์ถ่วง (CG) ของกลุ่มเสาเข็ม")
-        st.info(r"""
-        **สมการการย้ายโมเมนต์รอบแกน X:**
-        $$ M_{x,cg} = M_{x,ext} + (P_w \cdot e_y) $$
+        st.markdown("Let the origin $(0,0)$ be located at the **Center of Gravity (CG)** of the pile group, meaning $\\sum x_i = 0$ and $\\sum y_i = 0$.")
+        st.markdown("Any external load acting on the column is transferred to this CG, establishing eccentricities ($e_x, e_y$) as shown on the diagram:")
+        st.markdown(r"$$ e_x = CG_x - Col_x $$")
+        st.markdown(r"$$ e_y = CG_y - Col_y $$")
+        st.markdown("The net force and moment vectors acting on the pile cap at the CG are defined as:")
+        st.markdown(r"$$ \vec{F}_{ext} = P_w \hat{k} $$")
+        st.markdown(r"$$ \vec{M}_{cg} = M_{x,cg}\hat{i} + M_{y,cg}\hat{j} $$")
         
-        * $M_{x,ext}$: โมเมนต์ดัดโดยตรงจากเสา
-        * $P_w \cdot e_y$: โมเมนต์เพิ่มเติมจากการเยื้องศูนย์ (Couple Moment)
+        st.info(r"""
+        **Moment Transfer Equation:**
+        $$ M_{x,cg} = M_{x,ext} + (P_w \cdot e_y) $$
+        $$ M_{y,cg} = M_{y,ext} + (P_w \cdot e_x) $$
         """)
-        st.markdown(r"$$\text{Similarly for Y-axis: } M_{y,cg} = M_{y,ext} + (P_w \cdot e_x)$$")
-        st.write("โดยที่ $e_x, e_y$ คือระยะห่างจากพิกัดเสาไปยังแกนอ้างอิงที่ผ่านจุด CG")
 
     with col2:
-        # --- Figure 1: Moment Transfer Visualization ---
+        # --- Figure 1: Geometric Mapping & Equivalent Forces ---
         fig1, ax1 = plt.subplots(figsize=(7, 7))
 
-        # 1. วาดระบบแกนอ้างอิง CG
+        # 1. วาดฐานราก (Pile Cap)
+        cap = patches.Rectangle((-2.5, -2.5), 5.0, 5.0, linewidth=2, edgecolor='#2c3e50', facecolor='#f8f9fa', zorder=1)
+        ax1.add_patch(cap)
+
+        # 2. แกนหลัก (Axes)
         ax1.axhline(0, color='black', linewidth=1.5, zorder=2)
         ax1.axvline(0, color='black', linewidth=1.5, zorder=2)
-        ax1.plot(0, 0, marker='o', color='red', markersize=8, zorder=5)
-        ax1.text(0.1, -0.2, 'CG', fontweight='bold', color='red')
+        ax1.text(2.3, 0.1, 'X', fontsize=12, fontweight='bold')
+        ax1.text(0.1, 2.3, 'Y', fontsize=12, fontweight='bold')
 
-        # พิกัดเสา
-        col_x, col_y = -1.2, 1.5
+        # พิกัด
+        piles_x = [1.5, -1.5, -1.5, 1.5]
+        piles_y = [1.5, 1.5, -1.5, -1.5]
+        cg_x, cg_y = 0, 0
+        col_x, col_y = -0.8, 1.2
+
+        # 3. วาดเสาเข็ม
+        for i, (px, py) in enumerate(zip(piles_x, piles_y)):
+            pile = patches.Circle((px, py), 0.25, linewidth=1.5, edgecolor='#34495e', facecolor='#bdc3c7', zorder=3)
+            ax1.add_patch(pile)
+            bbox_props = dict(boxstyle="round,pad=0.2", fc="white", ec="gray", alpha=0.9)
+            ax1.text(px, py - 0.45, f'Pile {i+1}\n($x_{i+1}, y_{i+1}$)', ha='center', va='top', fontsize=9, bbox=bbox_props, zorder=4)
+
+        # 4. วาดจุดเสาและแรง (Column Load Pw)
+        col = patches.Rectangle((col_x - 0.2, col_y - 0.2), 0.4, 0.4, linewidth=2, edgecolor='black', facecolor='#f1c40f', zorder=5)
+        ax1.add_patch(col)
+        # สัญลักษณ์แรงพุ่งลง (⊗) ที่เสา
+        ax1.plot(col_x, col_y, marker='x', color='black', markersize=8, markeredgewidth=2, zorder=6)
+        ax1.text(col_x, col_y + 0.3, r'$P_w$ (Load)', ha='center', fontsize=11, fontweight='bold', color='#d35400', zorder=6)
+
+        # 5. จุดศูนย์ถ่วง (CG) และแรงลัพธ์ที่ถูกถ่ายเทมา
+        ax1.plot(cg_x, cg_y, marker='o', color='#e74c3c', markersize=10, zorder=5)
+        ax1.plot(cg_x, cg_y, marker='x', color='black', markersize=6, zorder=6)
+        ax1.text(0.1, -0.3, r'CG (Equivalent $\vec{F}_{ext}$)', color='#c0392b', fontsize=10, fontweight='bold', zorder=6)
+
+        # 6. เส้นบอกระยะเยื้องศูนย์ (Eccentricity)
+        dim_bbox = dict(boxstyle="round,pad=0.1", fc="white", ec="none", alpha=0.9)
+        ax1.annotate('', xy=(col_x, 0), xytext=(0, 0), arrowprops=dict(arrowstyle='<->', color='#27ae60', lw=2), zorder=6)
+        ax1.text(col_x / 2, 0.1, r'$e_x$', color='#27ae60', fontsize=12, ha='center', va='bottom', fontweight='bold', bbox=dim_bbox, zorder=7)
         
-        # 2. วาดระยะเยื้องศูนย์ e_y (Lever Arm สำหรับ M_x)
-        ax1.annotate('', xy=(col_x, 0), xytext=(col_x, col_y), 
-                     arrowprops=dict(arrowstyle='<->', color='#e67e22', lw=2.5))
-        ax1.text(col_x - 0.1, col_y/2, r'$e_y$', color='#d35400', fontsize=14, fontweight='bold', ha='right')
-
-        # 3. วาดเสาและแรง P_w
-        col_box = patches.Rectangle((col_x-0.25, col_y-0.25), 0.5, 0.5, facecolor='#f1c40f', edgecolor='black', zorder=4)
-        ax1.add_patch(col_box)
-        ax1.text(col_x, col_y + 0.4, r'$P_w$', ha='center', fontsize=13, fontweight='bold', color='#d35400')
-        ax1.plot(col_x, col_y, marker='x', color='black', markersize=8, markeredgewidth=2)
-
-        # 4. วาด Mx_ext (External Moment ที่เสา)
-        mx_ext_arrow = FancyArrowPatch((col_x + 0.4, col_y + 0.2), (col_x + 0.4, col_y - 0.2), 
-                                       connectionstyle="arc3,rad=.6", arrowstyle="simple", 
-                                       color='#9b59b6', lw=1, mutation_scale=15)
-        ax1.add_patch(mx_ext_arrow)
-        ax1.text(col_x + 0.6, col_y, r'$M_{x,ext}$', color='#8e44ad', fontsize=12, fontweight='bold')
-
-        # 5. วาด Force Transfer (เส้นประแสดงแนวแรง)
-        ax1.plot([col_x, 0], [col_y, col_y], 'k:', alpha=0.3)
-        ax1.plot([col_x, col_x], [col_y, 0], 'k:', alpha=0.3)
-
-        # 6. วาดผลลัพธ์โมเมนต์ที่ CG (M_x,cg)
-        mxcg_arrow = FancyArrowPatch((0.5, 0.4), (0.5, -0.4), 
-                                      connectionstyle="arc3,rad=.4", arrowstyle="simple", 
-                                      color='#e74c3c', lw=2, mutation_scale=25)
-        ax1.add_patch(mxcg_arrow)
-        ax1.text(0.8, 0, r'$M_{x,cg}$', color='#c0392b', fontsize=15, fontweight='bold', va='center')
+        ax1.annotate('', xy=(col_x, col_y), xytext=(col_x, 0), arrowprops=dict(arrowstyle='<->', color='#8e44ad', lw=2), zorder=6)
+        ax1.text(col_x - 0.1, col_y / 2, r'$e_y$', color='#8e44ad', fontsize=12, ha='right', va='center', fontweight='bold', bbox=dim_bbox, zorder=7)
         
-        # 7. สรุปสมการในรูป (แก้ไข Mathtext Error แล้ว)
-        ax1.text(-2.3, -1.9, r'$M_{x,cg} = M_{x,ext} + (P_w \cdot e_y)$', 
-                fontsize=13, bbox=dict(facecolor='white', alpha=0.9, edgecolor='#e74c3c'))
-        ax1.text(-2.3, -2.25, 'Direct Moment + Eccentricity Effect', 
-                fontsize=10, color='#c0392b', fontweight='bold')
+        ax1.plot([col_x, col_x], [0, col_y], color='gray', linestyle='--', linewidth=1, zorder=2)
+        ax1.plot([0, col_x], [col_y, col_y], color='gray', linestyle='--', linewidth=1, zorder=2)
 
-        ax1.set_xlim(-2.5, 2.5)
-        ax1.set_ylim(-2.5, 2.5)
+        # 7. โมเมนต์รอบแกน X และ Y ที่ CG (Curved Arrows)
+        mx_arrow = FancyArrowPatch((0.2, 0.4), (0.2, -0.4), connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=5,head_length=5", color='#e67e22', lw=1.5, zorder=6)
+        ax1.add_patch(mx_arrow)
+        ax1.text(0.6, 0, r'$\vec{M}_{x,cg}$', color='#d35400', fontsize=12, fontweight='bold', va='center')
+
+        my_arrow = FancyArrowPatch((-0.4, 0.2), (0.4, 0.2), connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=5,head_length=5", color='#2980b9', lw=1.5, zorder=6)
+        ax1.add_patch(my_arrow)
+        ax1.text(0, 0.6, r'$\vec{M}_{y,cg}$', color='#2980b9', fontsize=12, fontweight='bold', ha='center')
+
+        # เพิ่มกล่องสรุปสมการในกราฟแบบ Safe (ป้องกัน ValueError)
+        ax1.text(-2.4, -2.3, r'$M_{x,cg} = M_{x,ext} + (P_w \cdot e_y)$', fontsize=11, color='#c0392b', fontweight='bold', bbox=dict(facecolor='white', alpha=0.9, edgecolor='#e74c3c'), zorder=8)
+
         ax1.set_aspect('equal')
-        ax1.set_title("Moment Transfer Mechanics (X-Axis)", fontsize=14, fontweight='bold')
+        ax1.set_xlim(-2.8, 2.8)
+        ax1.set_ylim(-2.8, 2.8)
+        ax1.set_title('1) Top View: Transferred Net Force & Moments', fontsize=13, fontweight='bold', pad=15)
+        ax1.grid(True, linestyle=':', alpha=0.6)
         ax1.axis('off')
-        
+
         st.pyplot(fig1)
 
     st.divider()
 
-    # --- STEP 2: VECTOR KINEMATICS ---
+    # --- STEP 2 ---
     st.subheader("Step 2: Vector Kinematics (Rigid Cap Compatibility)")
     
-    col3, col4 = st.columns([1, 1.2])
+    col3, col4 = st.columns([1.1, 1.2])
 
     with col3:
-        st.markdown("ในฐานรากที่แข็งเกร็ง (Rigid) การเคลื่อนที่ของฐานรากประกอบด้วยการเลื่อนที่ในแนวแกน Z ($w_0$) และการหมุน ($\\vec{\\theta}$)")
-        st.latex(r"\vec{r}_i = x_i \hat{i} + y_i \hat{j}")
-        st.latex(r"\vec{\theta} = \theta_x \hat{i} + \theta_y \hat{j}")
-        st.markdown("ระยะยุบตัวของเสาเข็มแต่ละต้นหาได้จาก:")
-        st.latex(r"w_i = w_0 + (\vec{\theta} \times \vec{r}_i) \cdot \hat{k}")
-        st.markdown("เมื่อแตก Cross Product จะได้สมการการกระจายตัวแบบระนาบ (Planar Distribution):")
-        st.success(r"$$ w_i = w_0 + \theta_x y_i - \theta_y x_i $$")
+        st.markdown("According to the rigid pile cap assumption, the cap does not deform internally; it only translates vertically by $w_0$ and rotates as a rigid plane. We define the rotation vector $\\vec{\\theta}$ about the CG as:")
+        st.markdown(r"$$ \vec{\theta} = \theta_x \hat{i} + \theta_y \hat{j} $$")
+        st.markdown("The position vector $\\vec{r}_i$ pointing from the CG to any specific pile $i$ is defined as:")
+        st.markdown(r"$$ \vec{r}_i = x_i \hat{i} + y_i \hat{j} $$")
+        st.markdown("The total vertical displacement ($w_i$) of pile $i$ is the sum of uniform translation and the vertical component resulting from the rotation vector cross product ($\\vec{\\theta} \\times \\vec{r}_i$):")
+        st.markdown(r"$$ w_i = w_0 + (\vec{\theta} \times \vec{r}_i) \cdot \hat{k} $$")
+        st.markdown("Evaluating the cross product explicitly:")
+        st.markdown(r"$$ \vec{\theta} \times \vec{r}_i = (\theta_x \hat{i} + \theta_y \hat{j}) \times (x_i \hat{i} + y_i \hat{j}) = (\theta_x y_i - \theta_y x_i)\hat{k} $$")
+        st.markdown("Taking the dot product with $\\hat{k}$ yields the linear kinematic displacement equation:")
+        st.markdown(r"$$ w_i = w_0 + \theta_x y_i - \theta_y x_i $$")
 
     with col4:
-        # --- Figure 2: Vector components ri and theta ---
+        # --- Figure 2: Vector Components (r_i and theta) ---
         fig2, ax2 = plt.subplots(figsize=(7, 7))
-        ax2.axhline(0, color='black', linewidth=1.2)
-        ax2.axvline(0, color='black', linewidth=1.2)
 
-        # Pile i position
-        px, py = 1.8, 1.3
-        ax2.plot(px, py, 'o', color='#34495e', markersize=12)
-        ax2.text(px + 0.1, py + 0.1, 'Pile $i$', fontweight='bold')
+        ax2.axhline(0, color='black', linewidth=1.5, zorder=2)
+        ax2.axvline(0, color='black', linewidth=1.5, zorder=2)
+        ax2.text(2.6, 0.1, 'X', fontsize=12, fontweight='bold')
+        ax2.text(0.1, 2.6, 'Y', fontsize=12, fontweight='bold')
 
-        # r_i vector
-        ax2.annotate('', xy=(px, py), xytext=(0, 0),
-                     arrowprops=dict(arrowstyle='-|>', color='#2980b9', lw=3, mutation_scale=20))
-        ax2.text(px/2, py/2 + 0.2, r'$\vec{r}_i$', color='#2980b9', fontsize=16, fontweight='bold')
+        px, py = 2.0, 1.5
+        pile_i = patches.Circle((px, py), 0.25, linewidth=2, edgecolor='#34495e', facecolor='#bdc3c7', zorder=3)
+        ax2.add_patch(pile_i)
+        ax2.text(px, py + 0.35, 'Pile $i$', ha='center', fontsize=12, fontweight='bold', bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="gray", alpha=0.9))
+
+        ax2.annotate('', xy=(px, py), xytext=(0,0), arrowprops=dict(arrowstyle='-|>', color='#2980b9', lw=2.5, mutation_scale=20), zorder=4)
+        ax2.text(px/2 - 0.2, py/2 + 0.2, r'$\vec{r}_i$', color='#2980b9', fontsize=16, fontweight='bold', bbox=dict(boxstyle="circle,pad=0.1", fc="white", ec="none", alpha=0.8))
         
-        # Components of r_i
-        ax2.plot([px, px], [0, py], 'b--', alpha=0.5)
-        ax2.text(px + 0.1, py/2, r'$y_i \hat{j}$', color='#2980b9', va='center')
-        ax2.text(px/2, -0.25, r'$x_i \hat{i}$', color='#2980b9', ha='center')
+        ax2.annotate('', xy=(px, 0), xytext=(0,0), arrowprops=dict(arrowstyle='->', color='#3498db', lw=2, ls='--'), zorder=3)
+        ax2.annotate('', xy=(px, py), xytext=(px,0), arrowprops=dict(arrowstyle='->', color='#3498db', lw=2, ls='--'), zorder=3)
+        ax2.text(px/2, -0.2, r'$x_i \hat{i}$', color='#2980b9', fontsize=13, ha='center', fontweight='bold')
+        ax2.text(px + 0.15, py/2, r'$y_i \hat{j}$', color='#2980b9', fontsize=13, va='center', fontweight='bold')
 
-        # theta vector
-        tx, ty = 0.8, 1.8
-        ax2.annotate('', xy=(tx, ty), xytext=(0, 0),
-                     arrowprops=dict(arrowstyle='-|>', color='#c0392b', lw=3, mutation_scale=20))
-        ax2.text(tx/2 - 0.4, ty/2 + 0.3, r"$\vec{\theta}$", color='#c0392b', fontsize=16, fontweight='bold')
+        tx, ty = 1.0, 2.0
+        ax2.annotate('', xy=(tx, ty), xytext=(0,0), arrowprops=dict(arrowstyle='-|>', color='#c0392b', lw=2.5, mutation_scale=20), zorder=4)
+        ax2.text(tx/2 - 0.3, ty/2 + 0.1, r'$\vec{\theta}$', color='#c0392b', fontsize=16, fontweight='bold', bbox=dict(boxstyle="circle,pad=0.1", fc="white", ec="none", alpha=0.8))
         
-        # Components of theta
-        ax2.text(tx/2, 0.15, r"$\theta_x \hat{i}$", color='#c0392b', ha='center')
-        ax2.text(0.15, ty/2, r"$\theta_y \hat{j}$", color='#c0392b', va='center')
+        ax2.annotate('', xy=(tx, 0), xytext=(0,0), arrowprops=dict(arrowstyle='->', color='#e74c3c', lw=2, ls='-.'), zorder=3)
+        ax2.annotate('', xy=(0, ty), xytext=(0,0), arrowprops=dict(arrowstyle='->', color='#e74c3c', lw=2, ls='-.'), zorder=3)
+        ax2.text(tx/2, 0.15, r'$\theta_x \hat{i}$', color='#c0392b', fontsize=13, ha='center', fontweight='bold')
+        ax2.text(0.15, ty/2, r'$\theta_y \hat{j}$', color='#c0392b', fontsize=13, va='center', fontweight='bold')
 
-        ax2.set_xlim(-0.5, 2.5)
-        ax2.set_ylim(-0.5, 2.5)
         ax2.set_aspect('equal')
-        ax2.set_title("Position ($\\vec{r}_i$) & Rotation ($\\vec{\\theta}$) Vectors", fontsize=13, fontweight='bold')
+        ax2.set_xlim(-0.5, 2.8)
+        ax2.set_ylim(-0.5, 2.8)
+        ax2.set_title('2) Position & Rotation Vectors', fontsize=13, fontweight='bold', pad=15)
+        ax2.grid(True, linestyle=':', alpha=0.6)
         ax2.axis('off')
-        
+
         st.pyplot(fig2)
 
     st.divider()
 
-    # --- STEP 3 - 6: REMAINDER OF THE PROOF ---
-    st.subheader("Step 3 - 6: Equilibrium & Final Superposition")
-    
-    st.markdown(r"""
-    จากการสมดุลแรงและโมเมนต์ (Static Equilibrium):
-    1.  **Force Summation:** $P_w = \sum R_i \implies k w_0 = P_w / n$
-    2.  **Moment Summation:** $\vec{M}_{cg} = \sum (\vec{r}_i \times \vec{R}_i)$
-    
-    แทนค่า Displacement จากความสัมพันธ์เชิงเส้น จะได้สูตรสำเร็จที่ใช้ในการออกแบบ:
-    """)
+    # --- STEP 3 ถึง STEP 6 ---
+    st.subheader("Step 3: Constitutive Force-Displacement Relationship")
+    st.markdown("Assuming all piles behave as identical linear elastic springs with an axial stiffness $k$, the vertical reaction force vector $\\vec{R}_i$ at pile $i$ is:")
+    st.markdown(r"$$ \vec{R}_i = R_i \hat{k} = k \cdot w_i \hat{k} $$")
+    st.markdown(r"$$ R_i = k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \quad \text{--- (Eq. 1)} $$")
 
-    st.success(r"""
-    🎯 **Final Master Formula (Biaxial Bending):**
-    $$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$
-    """)
+    st.subheader("Step 4: Vector Static Equilibrium")
+    st.markdown("The summation of all internal pile reactions must satisfy both force and moment equilibrium against external actions.")
     
-    st.info(r"""
-    **Key Mechanical Insight:**
-    โมเมนต์ $M_{x,cg}$ (หมุนรอบแกน X) จะทำให้เกิดแรงปฏิกิริยาในเสาเข็มแปรผันตามระยะ $y_i$ และต้านทานด้วยอินเนอร์เชียกลุ่มเสาเข็ม $I_{xx} = \sum y_i^2$ 
-    """)
+    st.markdown("#### A. Vertical Force Equilibrium")
+    st.markdown(r"$$ \sum \vec{R}_i = \vec{F}_{ext} \implies \sum R_i = P_w $$")
+    st.markdown(r"$$ \sum \left[ k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \right] = P_w $$")
+    st.markdown("Since the origin is at the CG, $\\sum x_i = 0$ and $\\sum y_i = 0$. The equation simplifies to:")
+    st.markdown(r"$$ n \cdot (k w_0) = P_w \implies k w_0 = \frac{P_w}{n} \quad \text{--- (Eq. 2)} $$")
 
-# อย่าลืมเรียกใช้ฟังก์ชันในหน้าหลัก Streamlit
-# render_proof_tab()
+    st.markdown("#### B. Moment Equilibrium via Cross Product")
+    st.markdown("The external net moment vector at the CG must equal the sum of moments generated by the pile reactions:")
+    st.markdown(r"$$ \vec{M}_{cg} = \sum (\vec{r}_i \times \vec{R}_i) $$")
+    st.markdown(r"$$ M_{x,cg}\hat{i} + M_{y,cg}\hat{j} = \sum \left[ (x_i \hat{i} + y_i \hat{j}) \times (R_i \hat{k}) \right] $$")
+    st.markdown("Using standard unit vector cross products ($\\hat{i} \\times \\hat{k} = -\\hat{j}$ and $\\hat{j} \\times \\hat{k} = \\hat{i}$):")
+    st.markdown(r"$$ M_{x,cg}\hat{i} + M_{y,cg}\hat{j} = \sum (R_i y_i)\hat{i} - \sum (R_i x_i)\hat{j} $$")
+    
+    st.markdown("By equating the orthogonal vector components, we obtain two scalar equations:")
+    st.markdown(r"$$ M_{x,cg} = \sum R_i y_i \quad \text{and} \quad M_{y,cg} = -\sum R_i x_i $$")
+
+    st.subheader("Step 5: Solving for Bending Stiffness Constants")
+    st.markdown("Substitute the general expression for $R_i$ (Eq. 1) into the scalar moment equations, assuming principal axes of symmetry ($\\sum x_i y_i = 0$):")
+    st.markdown(r"$$ M_{x,cg} = \sum \left[ k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \right] y_i = k \theta_x \sum y_i^2 $$")
+    st.markdown(r"$$ M_{y,cg} = -\sum \left[ k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \right] x_i = k \theta_y \sum x_i^2 $$")
+    st.markdown("By defining the Pile Group Moments of Inertia as $I_{xx} = \\sum y_i^2$ and $I_{yy} = \\sum x_i^2$, we solve for the rotational terms:")
+    st.markdown(r"$$ k \theta_x = \frac{M_{x,cg}}{I_{xx}} \quad \text{--- (Eq. 3)} $$")
+    st.markdown(r"$$ k \theta_y = \frac{M_{y,cg}}{I_{yy}} \quad \text{--- (Eq. 4)} $$")
+
+    st.subheader("Step 6: Final Linear Superposition")
+    st.markdown("Substituting the solved equilibrium constants (Eq. 2, Eq. 3, and Eq. 4) back into the pile reaction equation (Eq. 1) yields the final master formula:")
+    
+    st.success("🎯 **Final Master Equation:**")
+    st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
+    
+    st.divider()
+    st.markdown("### 📌 Summary of Geometric Mapping")
+    st.markdown("- The position vector **$\\vec{r}_i = x_i \\hat{i} + y_i \\hat{j}$** physically maps each pile's coordinates relative to the CG.")
+    st.markdown("- The vector cross product elegantly demonstrates why $y_i$ couples with $I_{xx}$ (rotation about the X-axis) and $x_i$ couples with $I_{yy}$ (rotation about the Y-axis) without relying on arbitrary assumptions.")
 
     
 # 3. Streamlit UI and Output Rendering
