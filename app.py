@@ -344,16 +344,37 @@ def render_proof_tab():
     st.subheader("Step 7: Analysis of As-Built Pile Deviation")
     
     st.warning("⚠️ **Limitation of the Simplified Formula**")
-    st.markdown("The master equation derived in Step 6 assumes that the pile group layout is perfectly symmetrical, meaning the product of inertia is zero ($I_{xy} = \sum x_i y_i = 0$).")
+    st.markdown("The elementary formula derived in Steps 3–5 ($R_i = P_w/n + M_{x,cg}y_i/I_{xx} - M_{y,cg}x_i/I_{yy}$) rests on two silent assumptions: (a) the pile group is laid out symmetrically about both centroidal axes, so the product of inertia is zero ($I_{xy} = \\sum x_i y_i = 0$), and (b) every pile has identical axial stiffness. Real, as-built pile groups violate both. This step removes both assumptions and re-derives the general solution rigorously.")
     
-    st.markdown("If piles deviate significantly from their intended locations during construction (**As-Built Deviation**):")
-    st.markdown("- **1. Centroidal Shift:** The physical center of gravity of the group shifts. The coordinate origin must be re-established, which consequently changes the load eccentricities ($e_x, e_y$).")
-    st.markdown("- **2. Asymmetrical Bending Induction:** The group structure loses its axis of symmetry ($I_{xy} \\neq 0$). The rotation parameters (Eq. 3 and Eq. 4) become strongly coupled, requiring the generalized asymmetrical bending equation.")
+    st.markdown("If piles deviate significantly from their intended locations during construction (**As-Built Deviation**), or the group mixes pile types (main piles + micro-piles):")
+    st.markdown("- **1. Centroidal Shift:** The physical center of gravity of the group shifts away from the design centroid. The coordinate origin must be re-established at the *as-built, stiffness-weighted* CG, which consequently changes the load eccentricities ($e_x, e_y$) and hence $M_{x,cg}, M_{y,cg}$ (see Step 1 and the calculation sheet, Step 4).")
+    st.markdown("- **2. Asymmetrical Bending Induction:** Once piles are off their symmetric grid positions, $I_{xy} = \\sum k_i x_i y_i \\neq 0$. Rotation about the X-axis and rotation about the Y-axis are no longer independent — a pure $M_x$ moment now also perturbs the load pattern in the X-direction, and vice versa.")
+    st.markdown("- **3. Mixed Stiffness (Main vs. Micro Piles):** A remedial micro-pile is not as stiff as a main pile, so it cannot be counted as a full, equal contributor to the group's resistance. Each pile is assigned a relative stiffness factor $k_i$ (Step 6's $k_i$), which enters the CG calculation, $I_{xx}, I_{yy}, I_{xy}$, and the final $R_i$ split, exactly as if it were a fractional pile.")
+
+    st.markdown("#### 7.1 — Re-Deriving the Coupled System Without the Symmetry Assumption")
+    st.markdown("Repeating Step 5's substitution of $R_i = k_i(w_0 + \\theta_x y_i - \\theta_y x_i)$ into the moment-equilibrium equations $M_{x,cg}=\\sum(R_i y_i)$ and $M_{y,cg}=-\\sum(R_i x_i)$, but this time **without** discarding the $\\sum k_i x_i y_i$ term:")
+    st.markdown(r"$$ M_{x,cg} = \sum k_i(w_0+\theta_x y_i - \theta_y x_i)y_i = \theta_x \underbrace{\sum k_i y_i^2}_{I_{xx}} - \theta_y \underbrace{\sum k_i x_i y_i}_{I_{xy}} $$")
+    st.markdown(r"$$ M_{y,cg} = -\sum k_i(w_0+\theta_x y_i - \theta_y x_i)x_i = \theta_y \underbrace{\sum k_i x_i^2}_{I_{yy}} - \theta_x \underbrace{\sum k_i x_i y_i}_{I_{xy}} $$")
+    st.markdown("(The $w_0$ terms vanish because $\\sum k_i x_i = \\sum k_i y_i = 0$ at the stiffness-weighted CG.) This is a coupled linear system in $\\theta_x, \\theta_y$ — written in matrix form:")
+    st.markdown(r"$$ \begin{bmatrix} I_{xx} & -I_{xy} \\ -I_{xy} & I_{yy} \end{bmatrix} \begin{bmatrix} \theta_x \\ \theta_y \end{bmatrix} = \begin{bmatrix} M_{x,cg} \\ M_{y,cg} \end{bmatrix} $$")
+    st.markdown("Solving by Cramer's Rule, with determinant $\\Delta = I_{xx}I_{yy} - I_{xy}^2$:")
+    st.markdown(r"$$ \theta_x = \frac{M_{x,cg} I_{yy} + M_{y,cg} I_{xy}}{\Delta}, \qquad \theta_y = \frac{M_{y,cg} I_{xx} + M_{x,cg} I_{xy}}{\Delta} $$")
+    st.markdown("Substituting back into $R_i = k_i(w_0 + \\theta_x y_i - \\theta_y x_i)$ reproduces exactly the Step 6 formula. Setting $I_{xy}=0$ collapses $\\theta_x \\to M_{x,cg}/I_{xx}$ and $\\theta_y \\to M_{y,cg}/I_{yy}$, recovering the elementary Step 5 result — confirming Step 6 is the general case and Steps 3–5 are its symmetric special case, not a separate theory.")
+
+    st.markdown("#### 7.2 — The Relative Stiffness Factor $k_i$")
+    st.markdown("Physically, $k_i$ is the pile's axial stiffness relative to a reference main pile ($k_{main}=1.0$), i.e. in principle $k_i = (EA/L)_i \\big/ (EA/L)_{main}$. This software does not collect section, length, or modulus data, so it substitutes the ratio of **ultimate geotechnical capacities** as a practical proxy:")
+    st.markdown(r"$$ k_{micro} = \frac{Q_{ult,micro}}{Q_{ult,main}} $$")
+    st.markdown("This proxy is used consistently in three places, each time treating a micro-pile as a *fractional* main pile rather than a full one:")
+    st.markdown("- **CG location:** $\\bar{x} = \\sum(k_i x_{actual})/\\sum k_i$ — a soft pile pulls the centroid toward it less than a full-strength pile would.")
+    st.markdown("- **Moments of inertia:** $I_{xx}, I_{yy}, I_{xy}$ are all $k_i$-weighted sums — a soft pile contributes less rotational resistance.")
+    st.markdown("- **Reaction split:** $R_i = k_i \\cdot [\\ldots]$ — for the same rigid-cap displacement $w_i$, a soft pile is asked to carry proportionally less load.")
+    st.warning("⚠️ **Caveat:** capacity ratio is an *approximation* of stiffness ratio, not a derivation of it. Two piles can share identical ultimate capacity yet have very different axial stiffness (e.g. a short, stubby pile vs. a long, slender one of equal capacity deflect very differently under the same load). Where real pile geometry and modulus data are available, replace $k_i$ with $(EA/L)_i/(EA/L)_{main}$, or a geotechnical t-z spring stiffness, before using this tool for a final, stamped design.")
 
     st.divider()
     st.markdown("### 📌 Summary of Geometric Mapping")
     st.markdown("- The position vector **$\\vec{r}_i = x_i \hat{i} + y_i \hat{j}$** physically maps each pile's coordinates relative to the group's elastic centroid.")
     st.markdown("- The vector cross product elegantly demonstrates why $y_i$ couples with $I_{xx}$ (rotation about the X-axis) and $x_i$ couples with $I_{yy}$ (rotation about the Y-axis) without relying on arbitrary layout assumptions.")
+    st.markdown("- The stiffness factor $k_i$ generalizes every summation from a simple pile *count* to a pile *stiffness-weighted* sum, so mixed main/micro-pile groups are handled by the same equations as uniform groups.")
 
 
 # =========================================================================
@@ -452,6 +473,19 @@ with tab_calc:
             st.markdown(rf"$$ \bar{{x}} = \frac{{\sum (k_{{factor}} \cdot x_{{actual}})}}{{\sum k_{{factor}}}} = {summary['cg_x']:.4f} \text{{ m}} $$")
             st.markdown(rf"$$ \bar{{y}} = \frac{{\sum (k_{{factor}} \cdot y_{{actual}})}}{{\sum k_{{factor}}}} = {summary['cg_y']:.4f} \text{{ m}} $$")
             st.caption(f"Note: Total Relative Stiffness ($\sum k$) = {summary['sum_k']:.4f}")
+
+            with st.expander("ℹ️ Why is a **stiffness-weighted** CG used, instead of a simple geometric average?"):
+                cg_x_uw = df_res['x_actual'].mean()
+                cg_y_uw = df_res['y_actual'].mean()
+                st.markdown(r"""
+Each pile is assigned a relative stiffness factor $k_i$ (main pile $k_{main}=1.0$; micro-pile $k_{micro}=Q_{ult,micro}/Q_{ult,main}$), since a softer pile shouldn't shift the group's elastic center as much as a full-strength pile would. This factor weights **every** group sum in this report — the CG, $I_{xx}, I_{yy}, I_{xy}$, and the final $R_i$ split.
+""")
+                st.markdown(rf"""
+For **this** dataset:
+* Stiffness-weighted CG (used by this report): $(\bar{{x}}, \bar{{y}}) = ({summary['cg_x']:.4f},\ {summary['cg_y']:.4f})$ m
+* Naive, unweighted geometric average (if every pile counted equally): $(\bar{{x}}, \bar{{y}}) = ({cg_x_uw:.4f},\ {cg_y_uw:.4f})$ m
+""")
+                st.caption("⚠️ Caveat: capacity ratio (Q_ult,micro / Q_ult,main) is used as an **approximation** of true axial stiffness (EA/L), since this tool doesn't collect pile section/length/modulus data. If that data is available, a real EA/L-based (or geotechnical t-z spring) stiffness ratio would be more defensible for a final, stamped design. See the Proof tab, Step 7, for the full derivation.")
             
             st.markdown("#### Step 4: Total Eccentric Moments about New Shifted Centroid ($M_{x,cg}, M_{y,cg}$)")
             st.markdown("Since the physical column center is located at $(0,0)$, the eccentricities relative to the new stiffness-weighted CG are $e_x = \\bar{x}$ and $e_y = \\bar{y}$. Note the transfer equations carry **opposite signs** on the two terms — this is a direct consequence of the $\\hat{i}\\times\\hat{k}=-\\hat{j}$, $\\hat{j}\\times\\hat{k}=\\hat{i}$ identities (Proof tab, Step 4), which also give $M_{x,cg}=\\sum(R_i y_i)$ but $M_{y,cg}=-\\sum(R_i x_i)$:")
