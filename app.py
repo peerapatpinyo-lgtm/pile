@@ -307,6 +307,19 @@ def render_proof_tab():
     st.markdown("### 📌 Summary of Geometric Mapping")
     st.markdown("- The position vector **$\\vec{r}_i = x_i \hat{i} + y_i \hat{j}$** physically maps each pile's coordinates relative to the CG.")
     st.markdown("- The vector cross product elegantly demonstrates why $y_i$ couples with $I_{xx}$ (rotation about the X-axis) and $x_i$ couples with $I_{yy}$ (rotation about the Y-axis) without relying on arbitrary assumptions.")
+
+    # --- STEP 7 (NEW) ---
+    st.subheader("Step 7: Note on As-Built Pile Deviation (เสาเข็มหนีศูนย์)")
+    
+    st.warning("⚠️ **Limitation of the Simplified Formula**")
+    st.markdown("The master equation derived in Step 6 assumes that the pile group is perfectly symmetrical, meaning the product of inertia is zero ($I_{xy} = \sum x_i y_i = 0$).")
+    
+    st.markdown("If piles deviate from their intended coordinates during construction (**Pile Deviation**):")
+    st.markdown("- **1. CG Shift:** The physical center of gravity of the pile group shifts. The origin $(0,0)$ must be re-established, which consequently alters the load eccentricities ($e_x, e_y$).")
+    st.markdown("- **2. Asymmetrical Bending:** The group may lose symmetry ($I_{xy} \\neq 0$). The rotation constants (Eq. 3 and Eq. 4) become coupled, requiring the generalized asymmetrical bending formula:")
+    
+    # สมการแบบเต็มกรณีเข็มเยื้องจนเสียสมมาตร
+    st.markdown(r"$$ R_i = \frac{P_w}{n} + \left[ \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] y_i + \left[ \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] x_i $$")
     
 # 3. Streamlit UI and Output Rendering
 # ==========================================
