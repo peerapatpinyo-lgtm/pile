@@ -114,8 +114,8 @@ def render_proof_tab():
         **สมการการย้ายโมเมนต์รอบแกน X:**
         $$ M_{x,cg} = M_{x,ext} + (P_w \cdot e_y) $$
         
-        *   $M_{x,ext}$: โมเมนต์ดัดโดยตรงจากเสา
-        *   $P_w \cdot e_y$: โมเมนต์เพิ่มเติมจากการเยื้องศูนย์ (Couple Moment)
+        * $M_{x,ext}$: โมเมนต์ดัดโดยตรงจากเสา
+        * $P_w \cdot e_y$: โมเมนต์เพิ่มเติมจากการเยื้องศูนย์ (Couple Moment)
         """)
         st.markdown(r"$$\text{Similarly for Y-axis: } M_{y,cg} = M_{y,ext} + (P_w \cdot e_x)$$")
         st.write("โดยที่ $e_x, e_y$ คือระยะห่างจากพิกัดเสาไปยังแกนอ้างอิงที่ผ่านจุด CG")
@@ -134,7 +134,6 @@ def render_proof_tab():
         col_x, col_y = -1.2, 1.5
         
         # 2. วาดระยะเยื้องศูนย์ e_y (Lever Arm สำหรับ M_x)
-        # เน้นระยะ e_y ที่ขนานกับแกน Y เพื่อหมุนรอบแกน X
         ax1.annotate('', xy=(col_x, 0), xytext=(col_x, col_y), 
                      arrowprops=dict(arrowstyle='<->', color='#e67e22', lw=2.5))
         ax1.text(col_x - 0.1, col_y/2, r'$e_y$', color='#d35400', fontsize=14, fontweight='bold', ha='right')
@@ -143,7 +142,6 @@ def render_proof_tab():
         col_box = patches.Rectangle((col_x-0.25, col_y-0.25), 0.5, 0.5, facecolor='#f1c40f', edgecolor='black', zorder=4)
         ax1.add_patch(col_box)
         ax1.text(col_x, col_y + 0.4, r'$P_w$', ha='center', fontsize=13, fontweight='bold', color='#d35400')
-        # สัญลักษณ์แรงทิศทาง Z
         ax1.plot(col_x, col_y, marker='x', color='black', markersize=8, markeredgewidth=2)
 
         # 4. วาด Mx_ext (External Moment ที่เสา)
@@ -158,16 +156,17 @@ def render_proof_tab():
         ax1.plot([col_x, col_x], [col_y, 0], 'k:', alpha=0.3)
 
         # 6. วาดผลลัพธ์โมเมนต์ที่ CG (M_x,cg)
-        # แสดงลูกศรหมุนรอบแกน X ที่จุด CG
         mxcg_arrow = FancyArrowPatch((0.5, 0.4), (0.5, -0.4), 
                                       connectionstyle="arc3,rad=.4", arrowstyle="simple", 
                                       color='#e74c3c', lw=2, mutation_scale=25)
         ax1.add_patch(mxcg_arrow)
         ax1.text(0.8, 0, r'$M_{x,cg}$', color='#c0392b', fontsize=15, fontweight='bold', va='center')
         
-        # สรุปสมการในรูป
-        ax1.text(-2.3, -2.0, r'$M_{x,cg} = \underbrace{M_{x,ext}}_{\text{Direct}} + \underbrace{P_w \cdot e_y}_{\text{Eccentricity}}$', 
-                fontsize=13, bbox=dict(facecolor='white', alpha=0.8, edgecolor='#e74c3c'))
+        # 7. สรุปสมการในรูป (แก้ไข Mathtext Error แล้ว)
+        ax1.text(-2.3, -1.9, r'$M_{x,cg} = M_{x,ext} + (P_w \cdot e_y)$', 
+                fontsize=13, bbox=dict(facecolor='white', alpha=0.9, edgecolor='#e74c3c'))
+        ax1.text(-2.3, -2.25, 'Direct Moment + Eccentricity Effect', 
+                fontsize=10, color='#c0392b', fontweight='bold')
 
         ax1.set_xlim(-2.5, 2.5)
         ax1.set_ylim(-2.5, 2.5)
@@ -185,7 +184,7 @@ def render_proof_tab():
     col3, col4 = st.columns([1, 1.2])
 
     with col3:
-        st.markdown("ในฐานรากที่แข็งเกร็ง (Rigid) การเคลื่อนที่ของฐานรากประกอบด้วยการเลื่อนที่ในแนวแกน Z ($w_0$) และการหมุน ($\vec{\theta}$)")
+        st.markdown("ในฐานรากที่แข็งเกร็ง (Rigid) การเคลื่อนที่ของฐานรากประกอบด้วยการเลื่อนที่ในแนวแกน Z ($w_0$) และการหมุน ($\\vec{\\theta}$)")
         st.latex(r"\vec{r}_i = x_i \hat{i} + y_i \hat{j}")
         st.latex(r"\vec{\theta} = \theta_x \hat{i} + \theta_y \hat{j}")
         st.markdown("ระยะยุบตัวของเสาเข็มแต่ละต้นหาได้จาก:")
@@ -227,7 +226,7 @@ def render_proof_tab():
         ax2.set_xlim(-0.5, 2.5)
         ax2.set_ylim(-0.5, 2.5)
         ax2.set_aspect('equal')
-        ax2.set_title("Position ($\vec{r}_i$) & Rotation ($\vec{\theta}$) Vectors", fontsize=13, fontweight='bold')
+        ax2.set_title("Position ($\\vec{r}_i$) & Rotation ($\\vec{\\theta}$) Vectors", fontsize=13, fontweight='bold')
         ax2.axis('off')
         
         st.pyplot(fig2)
