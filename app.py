@@ -90,74 +90,80 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     return pd.DataFrame(piles), summary
 
 # ==========================================
-# 2. Proof Tab Rendering Function (Refined Variables & Logic)
+# 2. Proof Tab Rendering Function (Complete Radial & Cartesian Version)
 # ==========================================
 def render_proof_tab():
     st.header("📐 General Biaxial Bending Superposition (Rigid Cap Method)")
-    st.markdown("A rigorous step-by-step mathematical derivation of the pile reaction formula, ensuring strict variable consistency based on statics equilibrium and the rigid pile cap assumption.")
+    st.markdown("A complete, rigorous mathematical derivation combining the radial vector ($r$) approach with the Cartesian equilibrium shown on the whiteboard.")
     
     st.divider()
 
-    st.subheader("Step 1: Equilibrium at Center of Gravity (CG)")
-    st.markdown("We establish the coordinate origin $(0,0)$ at the **Center of Gravity (CG)** of the pile group. By definition, $\sum x_i = 0$ and $\sum y_i = 0$.")
-    st.markdown("External loads from the column must be transferred to the CG, creating load eccentricities ($e_x, e_y$):")
+    st.subheader("Step 1: Global Equilibrium & Eccentricity at CG")
+    st.markdown("We establish the coordinate origin $(0,0)$ at the **Center of Gravity (CG)** of the pile group ($\sum x_i = 0, \sum y_i = 0$). External column loads are transferred to this CG, inducing eccentricities ($e_x, e_y$):")
     st.markdown(r"$$ e_x = CG_x - Col_x $$")
     st.markdown(r"$$ e_y = CG_y - Col_y $$")
-    st.markdown("The net equilibrium equations for vertical force and moments acting at the CG become:")
+    st.markdown("The net equilibrium equations for the vertical force and moments acting at the CG are:")
     st.markdown(r"$$ \sum F_z = P_w $$")
     st.markdown(r"$$ \sum M_{x,cg} = M_{x,ext} + P_w \cdot e_y $$")
     st.markdown(r"$$ \sum M_{y,cg} = M_{y,ext} + P_w \cdot e_x $$")
 
-    st.subheader("Step 2: Rigid Cap Compatibility")
-    st.markdown("Assuming the pile cap is perfectly rigid, it remains a flat plane even when it undergoes uniform settlement and rotations. The vertical deformation ($w_i$) of any pile is directly proportional to its distance ($d_i$) from the neutral axis of rotation:")
-    st.markdown(r"$$ \frac{w_1}{d_1} = \frac{w_2}{d_2} = \text{constant} $$")
-    st.markdown("Assuming all piles act as identical elastic springs, the reaction force $R_i$ on a pile is proportional to its deformation ($R_i \propto w_i$). Therefore, the reaction force is also directly proportional to its distance from the axis of rotation.")
+    st.subheader("Step 2: Kinematics & Rigid Cap Compatibility (The $r$ Logic)")
+    st.markdown("As written on the whiteboard, the rigid cap assumption states that the cap remains perfectly planar during translation and rotation. Thus, the vertical displacement ($w_i$) of any pile is directly proportional to its distance from the axis of rotation:")
+    st.markdown(r"$$ \frac{w_1}{d_1} = \frac{w_2}{d_2} = \dots = \frac{w_i}{d_i} = \text{constant} $$")
+    st.markdown("Let us generalize this by defining the position vector $\vec{r}_i$ of any pile $i$ from the CG in the radial plane:")
+    st.markdown(r"$$ \vec{r}_i = x_i\hat{i} + y_i\hat{j} \implies r_i = \sqrt{x_i^2 + y_i^2} $$")
+    st.markdown("Since all piles are assumed to be identical elastic springs, Hooke's Law dictates that the pile reaction force is proportional to displacement ($R_i = k \cdot w_i$). Therefore, the resisting bending force ($R_{i,bend}$) is also directly proportional to its radial distance ($r_i$):")
+    st.markdown(r"$$ \frac{R_{1,bend}}{r_1} = \frac{R_{2,bend}}{r_2} = \dots = \frac{R_{i,bend}}{r_i} = c \quad \text{(where } c \text{ is a proportionality constant)} $$")
+    st.markdown(r"$$ R_{i,bend} = c \cdot r_i $$")
 
-    st.subheader("Step 3: Axial Load Contribution")
-    st.markdown("For pure vertical equilibrium ($\sum F_z = P_w$) with no moments, the rigid cap settles uniformly. The total axial load is distributed equally among all $n$ piles. Let $R_{i,axial}$ be this component:")
-    st.markdown(r"$$ \sum R_{i,axial} = P_w \implies n \cdot R_{i,axial} = P_w $$")
+    st.subheader("Step 3: Derivation of Pure Axial Contribution")
+    st.markdown("Under a pure concentric vertical load $P_w$ (with no moments), the rigid cap experiences uniform settlement. The total load is shared equally among all $n$ piles:")
     st.markdown(r"$$ R_{i,axial} = \frac{P_w}{n} $$")
 
-    st.subheader("Step 4: Bending Contribution (X-axis)")
-    st.markdown("For bending about the X-axis, the cap rotates, and the force on pile $i$ ($R_{i,mx}$) is proportional to its perpendicular distance from the X-axis, which is $y_i$.")
-    st.markdown(r"$$ R_{i,mx} = c_x \cdot y_i \quad \text{(where } c_x \text{ is a constant)} $$")
-    st.markdown(r"To satisfy moment equilibrium about the X-axis ($\sum M_x = M_{x,cg}$):")
-    st.markdown(r"$$ \sum (R_{i,mx} \cdot y_i) = M_{x,cg} $$")
-    st.markdown(r"$$ \sum ((c_x \cdot y_i) \cdot y_i) = M_{x,cg} \implies c_x \sum y_i^2 = M_{x,cg} $$")
-    st.markdown(r"Defining the Pile Group Moment of Inertia about the X-axis as $I_{xx} = \sum y_i^2$:")
-    st.markdown(r"$$ c_x \cdot I_{xx} = M_{x,cg} \implies c_x = \frac{M_{x,cg}}{I_{xx}} $$")
-    st.markdown(r"Substituting $c_x$ back gives the localized reaction due to X-axis bending:")
-    st.markdown(r"$$ R_{i,mx} = \frac{M_{x,cg} \cdot y_i}{I_{xx}} $$")
+    st.subheader("Step 4: Radial Moment Equilibrium")
+    st.markdown("The total external resultant moment ($M_R$) at the CG must be balanced by the sum of the internal moments generated by the individual radial pile forces:")
+    st.markdown(r"$$ M_R = \sum (R_{i,bend} \cdot r_i) $$")
+    st.markdown("Substitute the compatibility relation $R_{i,bend} = c \cdot r_i$ into the equilibrium equation:")
+    st.markdown(r"$$ M_R = \sum (c \cdot r_i \cdot r_i) = c \sum r_i^2 $$")
+    st.markdown(r"$$ c = \frac{M_R}{\sum r_i^2} $$")
+    st.markdown("Substituting $c$ back gives the total radial bending reaction force for any pile:")
+    st.markdown(r"$$ R_{i,bend} = \frac{M_R \cdot r_i}{\sum r_i^2} $$")
 
-    st.subheader("Step 5: Bending Contribution (Y-axis)")
-    st.markdown("Following the exact same geometric logic for bending about the Y-axis, the reaction force ($R_{i,my}$) is proportional to the distance $x_i$.")
-    st.markdown(r"Defining the Pile Group Moment of Inertia about the Y-axis as $I_{yy} = \sum x_i^2$:")
+    st.subheader("Step 5: Transition from Radial ($r$) to Cartesian Coordinates ($x, y$)")
+    st.markdown("To break this down into the orthogonal X and Y axes used in structural design, we substitute $r_i^2 = x_i^2 + y_i^2$ into the denominator:")
+    st.markdown(r"$$ \sum r_i^2 = \sum (x_i^2 + y_i^2) = \sum x_i^2 + \sum y_i^2 $$")
+    st.markdown("We define the **Pile Group Moments of Inertia** about the principal axes as:")
+    st.markdown(r"$$ I_{xx} = \sum y_i^2 \quad \text{and} \quad I_{yy} = \sum x_i^2 $$")
+    st.markdown("By projecting the radial force and resultant moment components onto the Cartesian axes, the single radial equation naturally splits into two independent bending equations:")
+    st.markdown(r"* **Bending about X-axis:** Induced by $M_{x,cg}$, causing reactions proportional to the perpendicular distance $y_i$:")
+    st.markdown(r"$$ R_{i,mx} = \frac{M_{x,cg} \cdot y_i}{I_{xx}} $$")
+    st.markdown(r"* **Bending about Y-axis:** Induced by $M_{y,cg}$, causing reactions proportional to the perpendicular distance $x_i$:")
     st.markdown(r"$$ R_{i,my} = \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
 
-    st.subheader("Step 6: Superposition (Final Formula)")
-    st.markdown("By the principle of superposition, the total reaction force $R_i$ on any specific pile $i$ is the algebraic sum of the uniform axial compression and the two bending contributions.")
+    st.subheader("Step 6: Final Superposition Equation")
+    st.markdown("By the principle of linear superposition, the total vertical reaction force $R_i$ on any specific pile $i$ is the sum of the uniform axial compression and the biaxial bending components:")
     
     st.info(r"💡 $R_i = (\text{Axial Contribution}) + (\text{Bending Contrib. X}) + (\text{Bending Contrib. Y})$")
     
-    st.success("🎯 **Final General Equation:**")
+    st.success("🎯 **Final General Biaxial Bending Formula:**")
     st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
     
     st.divider()
 
-    st.subheader("Notation & Definitions")
+    st.subheader("Variable Definitions")
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("""
         * **$R_i$**: Total Reaction Force on pile $i$
         * **$P_w$**: Total Working Axial Load
         * **$n$**: Total Number of Piles
-        * **$M_{x,cg}$**: Net Moment about X-axis at CG
-        * **$y_i$**: Y-coordinate of pile $i$ from CG
+        * **$M_{x,cg}$**: CG Moment about X-axis
+        * **$y_i$**: Pile distance from X-axis CG
         """)
     with col2:
         st.markdown("""
-        * **$M_{y,cg}$**: Net Moment about Y-axis at CG
-        * **$x_i$**: X-coordinate of pile $i$ from CG
+        * **$M_{y,cg}$**: CG Moment about Y-axis
+        * **$x_i$**: Pile distance from Y-axis CG
         * **$I_{xx}$**: Pile Group Inertia ($I_{xx} = \sum y_i^2$)
         * **$I_{yy}$**: Pile Group Inertia ($I_{yy} = \sum x_i^2$)
         """)
