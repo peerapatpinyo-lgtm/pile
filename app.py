@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import math
 
 # ==========================================
-# 1. Engineering Calculation Core
+# 1. Engineering Calculation Core (Upgraded for Asymmetry & Stiffness)
 # ==========================================
 def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacing, piles_df):
     """
-    Calculates pile reactions, checks pairwise pile spacing limits, 
-    and prepares comprehensive engineering calculation data.
+    Calculates pile reactions using Generalized Asymmetrical Bending Theory
+    and accounts for Relative Stiffness differences between Main and Micro piles.
     """
     piles_df = piles_df.dropna(subset=['Pile_Name'])
     if piles_df.empty:
@@ -24,11 +24,20 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     safe_load_main = q_main / fs if fs > 0 else 0
     safe_load_micro = q_micro / fs if fs > 0 else 0
 
+    # 1. Stiffness Assumption: Approximate stiffness ratio based on capacity
+    k_main = 1.0
+    k_micro = q_micro / q_main if q_main > 0 else 0.5 
+
+    sum_k = 0
     for p in piles:
         p['x_actual'] = p['x_design'] + p['dev_x']
         p['y_actual'] = p['y_design'] + p['dev_y']
         p['Allowable_Load'] = safe_load_main if p['Pile_Type'] == 'Main' else safe_load_micro
+        # Assign relative stiffness factor
+        p['k_factor'] = k_main if p['Pile_Type'] == 'Main' else k_micro
+        sum_k += p['k_factor']
 
+    # Spacing Check
     spacing_issues = []
     for i in range(n):
         for j in range(i + 1, n):
@@ -42,31 +51,44 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
                     'dist': dist
                 })
 
-    cg_x = sum(p['x_actual'] for p in piles) / n
-    cg_y = sum(p['y_actual'] for p in piles) / n
+    # 2. Stiffness-Weighted Center of Gravity (CG)
+    cg_x = sum(p['k_factor'] * p['x_actual'] for p in piles) / sum_k
+    cg_y = sum(p['k_factor'] * p['y_actual'] for p in piles) / sum_k
 
-    ecc_mx = pw * cg_y
-    ecc_my = pw * cg_x
-    
+    # 3. Eccentric Moments (Column is at 0,0 -> relative to CG is -cg_x, -cg_y)
+    ecc_mx = pw * (-cg_y)
+    ecc_my = pw * (-cg_x)
     mx_cg = mx_ext + ecc_mx
     my_cg = my_ext + ecc_my
 
-    ixx = 0
-    iyy = 0
+    # 4. Generalized Group Inertias (including I_xy)
+    ixx = iyy = ixy = 0
     for p in piles:
         p['x_i'] = p['x_actual'] - cg_x  
         p['y_i'] = p['y_actual'] - cg_y  
-        p['x_i_sq'] = p['x_i'] ** 2
-        p['y_i_sq'] = p['y_i'] ** 2
-        ixx += p['y_i_sq']  
-        iyy += p['x_i_sq']  
+        
+        # Multiply by stiffness factor to scale contribution
+        ixx += p['k_factor'] * (p['y_i'] ** 2)
+        iyy += p['k_factor'] * (p['x_i'] ** 2)
+        ixy += p['k_factor'] * (p['x_i'] * p['y_i'])
 
+    denom = (ixx * iyy) - (ixy ** 2)
+
+    # 5. Pile Reaction Calculation (Asymmetrical Bending Formula)
     overall_load_passed = True
     for p in piles:
-        term1 = pw / n
-        term2 = (mx_cg * p['y_i']) / ixx if ixx != 0 else 0
-        term3 = (my_cg * p['x_i']) / iyy if iyy != 0 else 0
-        p['Ri'] = term1 + term2 + term3
+        # Axial translation term
+        term1 = pw / sum_k
+        
+        # Rotation terms (coupled)
+        if denom != 0:
+            term2 = ((mx_cg * iyy - my_cg * ixy) / denom) * p['y_i']
+            term3 = ((my_cg * ixx - mx_cg * ixy) / denom) * p['x_i']
+        else:
+            term2 = term3 = 0
+            
+        # Final load = Stiffness * (Displacement)
+        p['Ri'] = p['k_factor'] * (term1 + term2 + term3)
         
         if p['Ri'] > p['Allowable_Load']:
             p['Status'] = 'FAIL (Overload)'
@@ -75,8 +97,8 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
             p['Status'] = 'PASS'
 
     summary = {
-        'n': n, 'cg_x': cg_x, 'cg_y': cg_y,
-        'ixx': ixx, 'iyy': iyy,
+        'n': n, 'cg_x': cg_x, 'cg_y': cg_y, 'sum_k': sum_k,
+        'ixx': ixx, 'iyy': iyy, 'ixy': ixy,
         'mx_cg': mx_cg, 'my_cg': my_cg,
         'ecc_mx': ecc_mx, 'ecc_my': ecc_my,
         'pw': pw, 'mx_ext': mx_ext, 'my_ext': my_ext,
