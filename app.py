@@ -312,12 +312,10 @@ def render_proof_tab():
     st.markdown(r"$$ k \theta_x = \frac{M_{x,cg}}{I_{xx}} \quad \text{--- (Eq. 3)} $$")
     st.markdown(r"$$ k \theta_y = \frac{M_{y,cg}}{I_{yy}} \quad \text{--- (Eq. 4)} $$")
 
-    # --- STEP 6 ---
-    st.subheader("Step 6: Final Linear Superposition")
-    st.markdown("Substituting the solved equilibrium constants (Eq. 2, Eq. 3, and Eq. 4) back into the pile reaction equation (Eq. 1) yields the final master formula:")
-    
-    st.success("🎯 **Final Master Equation:**")
-    st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
+    # --- STEP 6 (Theory Only) ---
+    st.subheader("Step 6: Generalized Asymmetrical Formulation")
+    st.markdown("When substituting the solutions back into Eq. 1 and generalizing for asymmetrical pile groups (where $I_{xy} \neq 0$ and stiffness $k_i$ varies), we arrive at the full governing equation utilized in this software:")
+    st.info(r"$$ R_i = k_i \cdot \left[ \frac{P_w}{\sum k} + \left( \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) y_i + \left( \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) x_i \right] $$")
     
     # --- STEP 7 ---
     st.subheader("Step 7: Analysis of As-Built Pile Deviation")
@@ -327,9 +325,7 @@ def render_proof_tab():
     
     st.markdown("If piles deviate significantly from their intended locations during construction (**As-Built Deviation**):")
     st.markdown("- **1. Centroidal Shift:** The physical center of gravity of the group shifts. The coordinate origin must be re-established, which consequently changes the load eccentricities ($e_x, e_y$).")
-    st.markdown("- **2. Asymmetrical Bending Induction:** The group structure loses its axis of symmetry ($I_{xy} \\neq 0$). The rotation parameters (Eq. 3 and Eq. 4) become strongly coupled, requiring the generalized asymmetrical bending equation:")
-    
-    st.markdown(r"$$ R_i = \frac{P_w}{n} + \left[ \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] y_i + \left[ \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right] x_i $$")
+    st.markdown("- **2. Asymmetrical Bending Induction:** The group structure loses its axis of symmetry ($I_{xy} \\neq 0$). The rotation parameters (Eq. 3 and Eq. 4) become strongly coupled, requiring the generalized asymmetrical bending equation.")
 
     st.divider()
     st.markdown("### 📌 Summary of Geometric Mapping")
@@ -460,7 +456,11 @@ with tab_calc:
             # NEW/REWRITTEN STEP 6: HIGH-DETAIL EXPLICIT NUMERICAL SUBSTITUTION
             # =================================================================
             st.markdown("#### Step 6: Detailed Pile Reaction Substitution via Asymmetrical Bending Theory ($R_i$)")
-            st.markdown("To ensure complete analytical transparency, the calculation is broken down by first evaluating the global foundation bending coefficients, followed by explicit coordinate substitution for each individual pile.")
+            st.markdown("To ensure complete analytical transparency, the calculation is strictly based on the **Full Generalized Asymmetrical Bending Equation**:")
+            
+            st.info(r"$$ R_i = k_i \cdot \left[ \frac{P_w}{\sum k} + \left( \frac{M_{x,cg} I_{yy} - M_{y,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) y_i + \left( \frac{M_{y,cg} I_{xx} - M_{x,cg} I_{xy}}{I_{xx} I_{yy} - I_{xy}^2} \right) x_i \right] $$")
+            
+            st.markdown("To simplify the explicit substitution for each pile, the bracketed terms are first evaluated globally as fundamental coefficients ($A, B$, and $C$):")
             
             # Compute global coefficients for the entire group
             coef_axial = pw_input / summary['sum_k']
