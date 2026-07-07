@@ -90,83 +90,79 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     return pd.DataFrame(piles), summary
 
 # ==========================================
-# 2. Proof Tab Rendering Function (Complete Radial & Cartesian Version)
+# 2. Proof Tab Rendering Function (Rigorous Vector Version)
 # ==========================================
 def render_proof_tab():
-    st.header("📐 General Biaxial Bending Superposition (Rigid Cap Method)")
-    st.markdown("A complete, rigorous mathematical derivation combining the radial vector ($r$) approach with the Cartesian equilibrium shown on the whiteboard.")
+    st.header("📐 Rigid Pile Cap: Rigorous Vector Derivation")
+    st.markdown("This section provides an advanced, step-by-step vector mechanics proof that directly links the position vector $\vec{r}_i$ to the final Cartesian biaxial bending formula.")
     
     st.divider()
 
-    st.subheader("Step 1: Global Equilibrium & Eccentricity at CG")
-    st.markdown("We establish the coordinate origin $(0,0)$ at the **Center of Gravity (CG)** of the pile group ($\sum x_i = 0, \sum y_i = 0$). External column loads are transferred to this CG, inducing eccentricities ($e_x, e_y$):")
+    st.subheader("Step 1: Coordinate Setup & Eccentricity at CG")
+    st.markdown("Let the origin $(0,0)$ be located at the **Center of Gravity (CG)** of the pile group, meaning $\sum x_i = 0$ and $\sum y_i = 0$.")
+    st.markdown("Any external load acting on the column is transferred to this CG, establishing eccentricities ($e_x, e_y$) as shown on the whiteboard:")
     st.markdown(r"$$ e_x = CG_x - Col_x $$")
     st.markdown(r"$$ e_y = CG_y - Col_y $$")
-    st.markdown("The net equilibrium equations for the vertical force and moments acting at the CG are:")
-    st.markdown(r"$$ \sum F_z = P_w $$")
-    st.markdown(r"$$ \sum M_{x,cg} = M_{x,ext} + P_w \cdot e_y $$")
-    st.markdown(r"$$ \sum M_{y,cg} = M_{y,ext} + P_w \cdot e_x $$")
+    st.markdown("The net force and moment vectors acting on the pile cap at the CG are defined as:")
+    st.markdown(r"$$ \vec{F}_{ext} = P_w \hat{k} $$")
+    st.markdown(r"$$ \vec{M}_{cg} = M_{x,cg}\hat{i} + M_{y,cg}\hat{j} $$")
+    st.markdown(r"$$\text{Where: } M_{x,cg} = M_{x,ext} + P_w \cdot e_y \quad \text{and} \quad M_{y,cg} = M_{y,ext} + P_w \cdot e_x$$")
 
-    st.subheader("Step 2: Kinematics & Rigid Cap Compatibility (The $r$ Logic)")
-    st.markdown("As written on the whiteboard, the rigid cap assumption states that the cap remains perfectly planar during translation and rotation. Thus, the vertical displacement ($w_i$) of any pile is directly proportional to its distance from the axis of rotation:")
-    st.markdown(r"$$ \frac{w_1}{d_1} = \frac{w_2}{d_2} = \dots = \frac{w_i}{d_i} = \text{constant} $$")
-    st.markdown("Let us generalize this by defining the position vector $\vec{r}_i$ of any pile $i$ from the CG in the radial plane:")
-    st.markdown(r"$$ \vec{r}_i = x_i\hat{i} + y_i\hat{j} \implies r_i = \sqrt{x_i^2 + y_i^2} $$")
-    st.markdown("Since all piles are assumed to be identical elastic springs, Hooke's Law dictates that the pile reaction force is proportional to displacement ($R_i = k \cdot w_i$). Therefore, the resisting bending force ($R_{i,bend}$) is also directly proportional to its radial distance ($r_i$):")
-    st.markdown(r"$$ \frac{R_{1,bend}}{r_1} = \frac{R_{2,bend}}{r_2} = \dots = \frac{R_{i,bend}}{r_i} = c \quad \text{(where } c \text{ is a proportionality constant)} $$")
-    st.markdown(r"$$ R_{i,bend} = c \cdot r_i $$")
+    st.subheader("Step 2: Vector Kinematics (Rigid Cap Compatibility)")
+    st.markdown("According to the rigid pile cap assumption, the cap does not deform internally; it only translates vertically by $w_0$ and rotates as a rigid plane. We define the rotation vector $\vec{\theta}$ about the CG as:")
+    st.markdown(r"$$ \vec{\theta} = \theta_x \hat{i} + \theta_y \hat{j} $$")
+    st.markdown(r"The position vector $\vec{r}_i$ pointing from the CG to any specific pile $i$ is:")
+    st.markdown(r"$$ \vec{r}_i = x_i \hat{i} + y_i \hat{j} $$")
+    st.markdown("The total vertical displacement ($w_i$) of pile $i$ is the sum of uniform translation and the vertical component resulting from the rotation vector cross product ($\vec{\theta} \times \vec{r}_i$):")
+    st.markdown(r"$$ w_i = w_0 + (\vec{\theta} \times \vec{r}_i) \cdot \hat{k} $$")
+    st.markdown("Evaluating the cross product explicitly:")
+    st.markdown(r"$$ \vec{\theta} \times \vec{r}_i = (\theta_x \hat{i} + \theta_y \hat{j}) \times (x_i \hat{i} + y_i \hat{j}) = (\theta_x y_i - \theta_y x_i)\hat{k} $$")
+    st.markdown("Taking the dot product with $\hat{k}$ yields the linear kinematic displacement equation:")
+    st.markdown(r"$$ w_i = w_0 + \theta_x y_i - \theta_y x_i $$")
 
-    st.subheader("Step 3: Derivation of Pure Axial Contribution")
-    st.markdown("Under a pure concentric vertical load $P_w$ (with no moments), the rigid cap experiences uniform settlement. The total load is shared equally among all $n$ piles:")
-    st.markdown(r"$$ R_{i,axial} = \frac{P_w}{n} $$")
+    st.subheader("Step 3: Constitutive Force-Displacement Relationship")
+    st.markdown("Assuming all piles behave as identical linear elastic springs with an axial stiffness $k$, the vertical reaction force vector $\vec{R}_i$ at pile $i$ is:")
+    st.markdown(r"$$ \vec{R}_i = R_i \hat{k} = k \cdot w_i \hat{k} $$")
+    st.markdown(r"$$ R_i = k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \quad \text{--- (Eq. 1)} $$")
 
-    st.subheader("Step 4: Radial Moment Equilibrium")
-    st.markdown("The total external resultant moment ($M_R$) at the CG must be balanced by the sum of the internal moments generated by the individual radial pile forces:")
-    st.markdown(r"$$ M_R = \sum (R_{i,bend} \cdot r_i) $$")
-    st.markdown("Substitute the compatibility relation $R_{i,bend} = c \cdot r_i$ into the equilibrium equation:")
-    st.markdown(r"$$ M_R = \sum (c \cdot r_i \cdot r_i) = c \sum r_i^2 $$")
-    st.markdown(r"$$ c = \frac{M_R}{\sum r_i^2} $$")
-    st.markdown("Substituting $c$ back gives the total radial bending reaction force for any pile:")
-    st.markdown(r"$$ R_{i,bend} = \frac{M_R \cdot r_i}{\sum r_i^2} $$")
-
-    st.subheader("Step 5: Transition from Radial ($r$) to Cartesian Coordinates ($x, y$)")
-    st.markdown("To break this down into the orthogonal X and Y axes used in structural design, we substitute $r_i^2 = x_i^2 + y_i^2$ into the denominator:")
-    st.markdown(r"$$ \sum r_i^2 = \sum (x_i^2 + y_i^2) = \sum x_i^2 + \sum y_i^2 $$")
-    st.markdown("We define the **Pile Group Moments of Inertia** about the principal axes as:")
-    st.markdown(r"$$ I_{xx} = \sum y_i^2 \quad \text{and} \quad I_{yy} = \sum x_i^2 $$")
-    st.markdown("By projecting the radial force and resultant moment components onto the Cartesian axes, the single radial equation naturally splits into two independent bending equations:")
-    st.markdown(r"* **Bending about X-axis:** Induced by $M_{x,cg}$, causing reactions proportional to the perpendicular distance $y_i$:")
-    st.markdown(r"$$ R_{i,mx} = \frac{M_{x,cg} \cdot y_i}{I_{xx}} $$")
-    st.markdown(r"* **Bending about Y-axis:** Induced by $M_{y,cg}$, causing reactions proportional to the perpendicular distance $x_i$:")
-    st.markdown(r"$$ R_{i,my} = \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
-
-    st.subheader("Step 6: Final Superposition Equation")
-    st.markdown("By the principle of linear superposition, the total vertical reaction force $R_i$ on any specific pile $i$ is the sum of the uniform axial compression and the biaxial bending components:")
+    st.subheader("Step 4: Vector Static Equilibrium")
+    st.markdown("The summation of all internal pile reactions must satisfy both force and moment equilibrium against external actions.")
     
-    st.info(r"💡 $R_i = (\text{Axial Contribution}) + (\text{Bending Contrib. X}) + (\text{Bending Contrib. Y})$")
+    st.markdown("#### A. Vertical Force Equilibrium")
+    st.markdown(r"$$ \sum \vec{R}_i = \vec{F}_{ext} \implies \sum R_i = P_w $$")
+    st.markdown(r"$$ \sum \left[ k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \right] = P_w $$")
+    st.markdown(r"Since the origin is at the CG, $\sum x_i = 0$ and $\sum y_i = 0$. The equation simplifies to:")
+    st.markdown(r"$$ n \cdot (k w_0) = P_w \implies k w_0 = \frac{P_w}{n} \quad \text{--- (Eq. 2)} $$")
+
+    st.markdown("#### B. Moment Equilibrium via Cross Product")
+    st.markdown("The external net moment vector at the CG must equal the sum of moments generated by the pile reactions:")
+    st.markdown(r"$$ \vec{M}_{cg} = \sum (\vec{r}_i \times \vec{R}_i) $$")
+    st.markdown(r"$$ M_{x,cg}\hat{i} + M_{y,cg}\hat{j} = \sum \left[ (x_i \hat{i} + y_i \hat{j}) \times (R_i \hat{k}) \right] $$")
+    st.markdown("Using standard unit vector cross products ($\hat{i} \times \hat{k} = -\hat{j}$ and $\hat{j} \times \hat{k} = \hat{i}$):")
+    st.markdown(r"$$ M_{x,cg}\hat{i} + M_{y,cg}\hat{j} = \sum (R_i y_i)\hat{i} - \sum (R_i x_i)\hat{j} $$")
     
-    st.success("🎯 **Final General Biaxial Bending Formula:**")
+    st.markdown("By equating the orthogonal vector components, we obtain two scalar equations:")
+    st.markdown(r"$$ M_{x,cg} = \sum R_i y_i \quad \text{and} \quad M_{y,cg} = -\sum R_i x_i $$")
+
+    st.subheader("Step 5: Solving for Bending Stiffness Constants")
+    st.markdown("Substitute the general expression for $R_i$ (Eq. 1) into the scalar moment equations, assuming principal axes of symmetry ($\sum x_i y_i = 0$):")
+    st.markdown(r"$$ M_{x,cg} = \sum \left[ k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \right] y_i = k \theta_x \sum y_i^2 $$")
+    st.markdown(r"$$ M_{y,cg} = -\sum \left[ k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \right] x_i = k \theta_y \sum x_i^2 $$")
+    st.markdown(r"By defining the Pile Group Moments of Inertia as $I_{xx} = \sum y_i^2$ and $I_{yy} = \sum x_i^2$, we solve for the rotational terms:")
+    st.markdown(r"$$ k \theta_x = \frac{M_{x,cg}}{I_{xx}} \quad \text{--- (Eq. 3)} $$")
+    st.markdown(r"$$ k \theta_y = \frac{M_{y,cg}}{I_{yy}} \quad \text{--- (Eq. 4)} $$")
+
+    st.subheader("Step 6: Final Linear Superposition")
+    st.markdown("Substituting the solved equilibrium constants (Eq. 2, Eq. 3, and Eq. 4) back into the pile reaction equation (Eq. 1) yields the final absolute magnitude for design:")
+    
+    st.success("🎯 **Final Master Equation:**")
     st.markdown(r"$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
     
     st.divider()
-
-    st.subheader("Variable Definitions")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("""
-        * **$R_i$**: Total Reaction Force on pile $i$
-        * **$P_w$**: Total Working Axial Load
-        * **$n$**: Total Number of Piles
-        * **$M_{x,cg}$**: CG Moment about X-axis
-        * **$y_i$**: Pile distance from X-axis CG
-        """)
-    with col2:
-        st.markdown("""
-        * **$M_{y,cg}$**: CG Moment about Y-axis
-        * **$x_i$**: Pile distance from Y-axis CG
-        * **$I_{xx}$**: Pile Group Inertia ($I_{xx} = \sum y_i^2$)
-        * **$I_{yy}$**: Pile Group Inertia ($I_{yy} = \sum x_i^2$)
-        """)
+    st.markdown("""
+    * **$\vec{r}_i = x_i \hat{i} + y_i \hat{j}$** represents the geometric position vector that maps each pile's contribution.
+    * The vector cross-product elegantly establishes why $y_i$ couples with $I_{xx}$ (rotation about X) and $x_i$ couples with $I_{yy}$ (rotation about Y) without any loose assumptions.
+    """)
 
 # ==========================================
 # 3. Streamlit UI and Output Rendering
