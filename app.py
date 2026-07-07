@@ -88,13 +88,14 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     }
     
     return pd.DataFrame(piles), summary
+
 import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.patches import FancyArrowPatch
 
 # ==========================================
-# 2. Proof Tab Rendering Function (Micro Scale)
+# 2. Proof Tab Rendering Function (Refined Scale & Full Details)
 # ==========================================
 def render_proof_tab():
     st.header("📐 Rigid Pile Cap: Rigorous Vector Derivation")
@@ -124,10 +125,10 @@ def render_proof_tab():
 
     with col2:
         # --- Figure 1: Geometric Mapping & Equivalent Forces ---
-        # ปรับขนาดรูปลงเหลือ 3.2 x 3.2
-        fig1, ax1 = plt.subplots(figsize=(3.2, 3.2))
+        # ปรับสเกลให้อยู่ในขนาดพอดี (3.8 x 3.8) ดีเทลครบ ตัวหนังสือไม่เบียด
+        fig1, ax1 = plt.subplots(figsize=(3.8, 3.8))
 
-        cap = patches.Rectangle((-2.5, -2.5), 5.0, 5.0, linewidth=1, edgecolor='#2c3e50', facecolor='#f8f9fa', zorder=1)
+        cap = patches.Rectangle((-2.5, -2.5), 5.0, 5.0, linewidth=1.2, edgecolor='#2c3e50', facecolor='#f8f9fa', zorder=1)
         ax1.add_patch(cap)
 
         ax1.axhline(0, color='black', linewidth=1, zorder=2)
@@ -140,17 +141,19 @@ def render_proof_tab():
         cg_x, cg_y = 0, 0
         col_x, col_y = -0.8, 1.2
 
+        # วาดเสาเข็มพร้อมดึง Detail พิกัด (x, y) กลับมาแสดง
         for i, (px, py) in enumerate(zip(piles_x, piles_y)):
             pile = patches.Circle((px, py), 0.25, linewidth=1, edgecolor='#34495e', facecolor='#bdc3c7', zorder=3)
             ax1.add_patch(pile)
             bbox_props = dict(boxstyle="round,pad=0.1", fc="white", ec="gray", alpha=0.9)
-            ax1.text(px, py - 0.45, f'Pile {i+1}', ha='center', va='top', fontsize=6, bbox=bbox_props, zorder=4)
+            ax1.text(px, py - 0.35, f'Pile {i+1}\n($x_{i+1}, y_{i+1}$)', ha='center', va='top', fontsize=6, bbox=bbox_props, zorder=4)
 
         col = patches.Rectangle((col_x - 0.2, col_y - 0.2), 0.4, 0.4, linewidth=1, edgecolor='black', facecolor='#f1c40f', zorder=5)
         ax1.add_patch(col)
         ax1.plot(col_x, col_y, marker='x', color='black', markersize=4, markeredgewidth=1, zorder=6)
         ax1.text(col_x, col_y - 0.35, r'$P_w$', ha='center', fontsize=7, fontweight='bold', color='#d35400', zorder=6)
 
+        # วาดภายนอกโมเมนต์ที่เสา (Mx,ext , My,ext)
         mx_ext_arrow = FancyArrowPatch((col_x + 0.25, col_y + 0.15), (col_x + 0.25, col_y - 0.15), 
                                        connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=2.5,head_length=2.5", 
                                        color='#8e44ad', lw=0.8, zorder=6)
@@ -215,8 +218,7 @@ def render_proof_tab():
 
     with col4:
         # --- Figure 2: Vector Components ---
-        # ปรับขนาดรูปลงเหลือ 3.2 x 3.2
-        fig2, ax2 = plt.subplots(figsize=(3.2, 3.2))
+        fig2, ax2 = plt.subplots(figsize=(3.8, 3.8))
 
         ax2.axhline(0, color='black', linewidth=1, zorder=2)
         ax2.axvline(0, color='black', linewidth=1, zorder=2)
@@ -256,12 +258,16 @@ def render_proof_tab():
 
     st.divider()
 
-    # --- STEP 3 ถึง STEP 6 ---
+    # --- STEP 3 ---
     st.subheader("Step 3: Constitutive Force-Displacement Relationship")
-    st.markdown("Assuming all piles behave as identical linear elastic springs with an axial stiffness $k$, the vertical reaction force vector $\\vec{R}_i$ at pile $i$ is:")
+    st.markdown("Assuming all piles behave as identical linear elastic springs with an axial stiffness $k$, the reaction force is directly proportional to the vertical displacement (Hooke's Law):")
+    # เพิ่มสมการหลักตรงนี้ตามที่ต้องการเรียบร้อยครับ
+    st.markdown(r"$$ R_i = k \cdot w_i $$")
+    st.markdown("Expressing the vertical reaction force vector $\\vec{R}_i$ at pile $i$ in vector form:")
     st.markdown(r"$$ \vec{R}_i = R_i \hat{k} = (k \cdot w_i) \hat{k} $$")
     st.markdown(r"$$ R_i = k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \quad \text{--- (Eq. 1)} $$")
 
+    # --- STEP 4 ---
     st.subheader("Step 4: Vector Static Equilibrium")
     st.markdown("The summation of all internal pile reactions must satisfy both force and moment equilibrium against external actions.")
     
@@ -281,6 +287,7 @@ def render_proof_tab():
     st.markdown("By equating the orthogonal vector components, we obtain two scalar equations:")
     st.markdown(r"$$ M_{x,cg} = \sum (R_i y_i) \quad \text{and} \quad M_{y,cg} = -\sum (R_i x_i) $$")
 
+    # --- STEP 5 ---
     st.subheader("Step 5: Solving for Bending Stiffness Constants")
     st.markdown("Substitute the general expression for $R_i$ (Eq. 1) into the scalar moment equations, assuming principal axes of symmetry ($\sum x_i y_i = 0$):")
     st.markdown(r"$$ M_{x,cg} = \sum \left[ k w_0 + (k \theta_x) y_i - (k \theta_y) x_i \right] y_i = k \theta_x \sum y_i^2 $$")
@@ -289,6 +296,7 @@ def render_proof_tab():
     st.markdown(r"$$ k \theta_x = \frac{M_{x,cg}}{I_{xx}} \quad \text{--- (Eq. 3)} $$")
     st.markdown(r"$$ k \theta_y = \frac{M_{y,cg}}{I_{yy}} \quad \text{--- (Eq. 4)} $$")
 
+    # --- STEP 6 ---
     st.subheader("Step 6: Final Linear Superposition")
     st.markdown("Substituting the solved equilibrium constants (Eq. 2, Eq. 3, and Eq. 4) back into the pile reaction equation (Eq. 1) yields the final master formula:")
     
@@ -299,7 +307,6 @@ def render_proof_tab():
     st.markdown("### 📌 Summary of Geometric Mapping")
     st.markdown("- The position vector **$\\vec{r}_i = x_i \hat{i} + y_i \hat{j}$** physically maps each pile's coordinates relative to the CG.")
     st.markdown("- The vector cross product elegantly demonstrates why $y_i$ couples with $I_{xx}$ (rotation about the X-axis) and $x_i$ couples with $I_{yy}$ (rotation about the Y-axis) without relying on arbitrary assumptions.")
-
     
 # 3. Streamlit UI and Output Rendering
 # ==========================================
