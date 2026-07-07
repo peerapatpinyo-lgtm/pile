@@ -89,9 +89,9 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     
     return pd.DataFrame(piles), summary
 
-
 import streamlit as st
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import numpy as np
 
 # ==========================================
@@ -114,53 +114,77 @@ def render_proof_tab():
     st.markdown(r"$$\text{Where: } M_{x,cg} = M_{x,ext} + P_w \cdot e_y \quad \text{and} \quad M_{y,cg} = M_{y,ext} + P_w \cdot e_x$$")
 
     # ==========================================
-    # VISUALIZATION SECTION (MATPLOTLIB)
+    # VISUALIZATION SECTION (IMPROVED MATPLOTLIB)
     # ==========================================
     st.markdown("#### 📊 Geometric Mapping Visualization")
-    st.markdown("แผนภาพแสดงระบบพิกัดของฐานราก, เวกเตอร์บอกตำแหน่ง $\\vec{r}_i$ (สีน้ำเงิน) จาก CG ไปยังเสาเข็มแต่ละต้น และระยะเยื้องศูนย์ $e_x, e_y$ (สีเขียว)")
+    st.markdown("แผนภาพระดับวิศวกรรมแสดงระบบพิกัด, ขอบเขตฐานราก, เวกเตอร์บอกตำแหน่ง $\\vec{r}_i$ และการระบุพิกัดเสา $Col_x, Col_y$ ที่ก่อให้เกิดระยะเยื้องศูนย์")
     
-    fig, ax = plt.subplots(figsize=(7, 7))
+    fig, ax = plt.subplots(figsize=(9, 9))
 
-    # กำหนดพิกัดจำลอง (4 เสาเข็ม)
+    # 1. วาดฐานราก (Concrete Pile Cap)
+    cap = patches.Rectangle((-2.2, -2.2), 4.4, 4.4, linewidth=2, edgecolor='#333333', facecolor='#f4f4f4', zorder=1)
+    ax.add_patch(cap)
+
+    # 2. วาดเส้นแกนหลัก (X-Y Axes) ผ่าน CG
+    ax.axhline(0, color='black', linewidth=1.5, zorder=2)
+    ax.axvline(0, color='black', linewidth=1.5, zorder=2)
+
+    # พิกัดจำลอง
     piles_x = [1.5, -1.5, -1.5, 1.5]
     piles_y = [1.5, 1.5, -1.5, -1.5]
     cg_x, cg_y = 0, 0
-    col_x, col_y = -0.5, 0.8  # ตำแหน่งสมมติของเสา (Column)
+    col_x, col_y = -0.8, 1.2  # พิกัดของเสา
 
-    # วาดเสาเข็ม (Piles)
-    ax.scatter(piles_x, piles_y, s=400, c='lightgray', edgecolors='black', label='Piles', zorder=3)
+    # 3. วาดเสาเข็ม (Piles)
     for i, (px, py) in enumerate(zip(piles_x, piles_y)):
-        ax.text(px, py + 0.25, f'Pile {i+1}\n($x_{i+1}, y_{i+1}$)', ha='center', fontsize=10)
+        # ตัวเสาเข็ม
+        pile = patches.Circle((px, py), 0.25, linewidth=1.5, edgecolor='#333333', facecolor='#cccccc', zorder=3)
+        ax.add_patch(pile)
+        
+        # ป้ายกำกับชื่อเสาเข็ม
+        bbox_props = dict(boxstyle="round,pad=0.3", fc="white", ec="none", alpha=0.8)
+        ax.text(px, py - 0.45, f'Pile {i+1}\n($x_{i+1}, y_{i+1}$)', ha='center', va='top', fontsize=10, bbox=bbox_props, zorder=4)
+        
         # วาดเวกเตอร์ r_i (จาก CG ไป Piles)
         ax.annotate('', xy=(px, py), xytext=(cg_x, cg_y),
-                    arrowprops=dict(arrowstyle='->', color='blue', lw=1.5, alpha=0.6))
+                    arrowprops=dict(arrowstyle='->', color='#2196F3', lw=1.5, alpha=0.6), zorder=3)
 
-    # วาดจุด CG
-    ax.scatter(cg_x, cg_y, s=150, c='red', marker='X', label='CG (0,0)', zorder=4)
+    # กำกับชื่อเวกเตอร์ r_1 ให้ชัดเจนที่เสาเข็ม 1
+    ax.text(piles_x[0]/2 + 0.1, piles_y[0]/2 - 0.2, r'$\vec{r}_1$', color='#2196F3', fontsize=14, fontweight='bold', zorder=4)
 
-    # วาดตำแหน่งเสา (Column Load)
-    ax.scatter(col_x, col_y, s=250, c='orange', marker='s', edgecolors='black', label='Column Load', zorder=4)
+    # 4. วาดจุดศูนย์ถ่วง (CG)
+    ax.plot(cg_x, cg_y, marker='+', color='#F44336', markersize=18, markeredgewidth=3, zorder=5, label='CG (0,0)')
 
-    # วาดเส้นบอกระยะเยื้องศูนย์ (Eccentricity)
-    ax.plot([col_x, col_x], [col_y, cg_y], color='green', linestyle='--', zorder=2)
-    ax.plot([col_x, cg_x], [cg_y, cg_y], color='green', linestyle='--', zorder=2)
+    # 5. วาดตำแหน่งเสา (Column Load)
+    col = patches.Rectangle((col_x - 0.2, col_y - 0.2), 0.4, 0.4, linewidth=2, edgecolor='black', facecolor='#FFC107', zorder=5, label='Column Load')
+    ax.add_patch(col)
+    ax.plot(col_x, col_y, marker='x', color='black', markersize=8, markeredgewidth=2, zorder=6)
+
+    # 6. วาดเส้นบอกระยะ (Dimension Lines) สำหรับ Col_x และ Col_y
+    dim_bbox = dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.9)
     
-    ax.text(col_x - 0.2, col_y / 2, '$e_y$', color='green', fontsize=12, fontweight='bold')
-    ax.text(col_x / 2, cg_y - 0.2, '$e_x$', color='green', fontsize=12, fontweight='bold')
+    # ระยะ Col_x (แนวแกน X)
+    ax.annotate('', xy=(col_x, 0), xytext=(0, 0), arrowprops=dict(arrowstyle='<->', color='#4CAF50', lw=2.5), zorder=6)
+    ax.text(col_x / 2, 0.1, r'$Col_x$', color='#388E3C', fontsize=13, ha='center', va='bottom', fontweight='bold', bbox=dim_bbox, zorder=7)
 
-    # ตกแต่งกราฟ
-    ax.axhline(0, color='black', linewidth=1, ls='-', alpha=0.3)
-    ax.axvline(0, color='black', linewidth=1, ls='-', alpha=0.3)
+    # ระยะ Col_y (แนวแกน Y)
+    ax.annotate('', xy=(col_x, col_y), xytext=(col_x, 0), arrowprops=dict(arrowstyle='<->', color='#9C27B0', lw=2.5), zorder=6)
+    ax.text(col_x - 0.1, col_y / 2, r'$Col_y$', color='#7B1FA2', fontsize=13, ha='right', va='center', fontweight='bold', bbox=dim_bbox, zorder=7)
+    
+    # ลากเส้นประช่วยเล็ง (Construction lines)
+    ax.plot([col_x, col_x], [0, col_y], color='gray', linestyle='--', linewidth=1, zorder=2)
+    ax.plot([0, col_x], [col_y, col_y], color='gray', linestyle='--', linewidth=1, zorder=2)
+
+    # ตกแต่งกราฟให้สมบูรณ์
     ax.set_aspect('equal')
-    ax.set_xlim(-2.5, 2.5)
-    ax.set_ylim(-2.5, 2.5)
-    ax.set_xlabel('X - Axis (m)', fontsize=11)
-    ax.set_ylabel('Y - Axis (m)', fontsize=11)
-    ax.set_title('Top View: Rigid Pile Cap Coordinate System', fontsize=14, pad=15)
-    ax.legend(loc='upper right', framealpha=0.9)
-    ax.grid(True, linestyle=':', alpha=0.6)
+    ax.set_xlim(-2.8, 2.8)
+    ax.set_ylim(-2.8, 2.8)
+    ax.set_xlabel('X - Axis (m)', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Y - Axis (m)', fontsize=12, fontweight='bold')
+    ax.set_title('Top View: Rigid Pile Cap Coordinate System', fontsize=15, pad=20, fontweight='bold')
+    ax.legend(loc='upper right', framealpha=1.0, edgecolor='black', fontsize=11)
+    ax.grid(True, linestyle=':', alpha=0.7)
 
-    # เรนเดอร์กราฟลง Streamlit
     st.pyplot(fig)
     # ==========================================
 
@@ -218,7 +242,6 @@ def render_proof_tab():
     st.markdown("### 📌 Summary of Geometric Mapping")
     st.markdown("- The position vector **$\\vec{r}_i = x_i \\hat{i} + y_i \\hat{j}$** physically maps each pile's coordinates relative to the CG.")
     st.markdown("- The vector cross product elegantly demonstrates why $y_i$ couples with $I_{xx}$ (rotation about the X-axis) and $x_i$ couples with $I_{yy}$ (rotation about the Y-axis) without relying on arbitrary assumptions.")
-    
 # ==========================================
 # 3. Streamlit UI and Output Rendering
 # ==========================================
