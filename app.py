@@ -90,43 +90,66 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     return pd.DataFrame(piles), summary
 
 # ==========================================
-# 2. Proof Tab Rendering Function
+# 2. Proof Tab Rendering Function (Updated)
 # ==========================================
 def render_proof_tab():
-    st.header("📐 Rigid Pile Cap: Formula Derivation (Proof)")
-    st.markdown("การพิสูจน์สมการการกระจายแรงลงเสาเข็มภายใต้สมมติฐาน **Rigid Pile Cap (ฐานรากแข็งเกร็ง)** อ้างอิงจากกระดาน")
+    st.header("📐 Rigid Pile Cap: General Formula Derivation (Proof)")
+    st.markdown("Detailed step-by-step derivation of the general pile reaction formula under combined axial load and biaxial bending, assuming a **Rigid Pile Cap**.")
     
     st.divider()
 
-    st.subheader("1. กำหนดตัวแปรและเวกเตอร์ (Vectors & Setup)")
-    st.markdown(r"$$ \vec{r}_1 = x_1\hat{i} + y_1\hat{j} $$")
-    st.markdown(r"$$ \vec{r}_2 = x_2\hat{i} + y_2\hat{j} $$")
-    st.markdown(r"$$ \vec{M}_R = M_x\hat{i} + M_y\hat{j} $$")
+    st.subheader("1. Fundamental Assumptions")
+    st.markdown("""
+* **Rigid Pile Cap:** The pile cap is infinitely stiff and does not bend or deform. It only translates and rotates as a rigid planar body.
+* **Elastic Piles:** All piles behave identically as linearly elastic springs with the same axial stiffness ($k$).
+* **Centroidal Axis:** The origin $(0,0)$ of the coordinate system is located at the elastic center (Center of Gravity, CG) of the pile group. Therefore, $\sum x_i = 0$ and $\sum y_i = 0$.
+* **Symmetry:** The product of inertia is assumed to be zero ($\sum x_i y_i = 0$), meaning the X and Y axes act as principal axes.
+""")
+
+    st.subheader("2. Kinematics (Displacement Compatibility)")
+    st.markdown("When the rigid cap is subjected to a vertical load and moments, it undergoes a uniform vertical translation ($w_0$) and rotations about the X-axis ($\theta_x$) and Y-axis ($\theta_y$).")
+    st.markdown("The vertical displacement ($w_i$) of any pile $i$ located at coordinate $(x_i, y_i)$ relative to the CG is given by:")
+    st.markdown(r"$$ w_i = w_0 + \theta_x \cdot y_i + \theta_y \cdot x_i $$")
     
-    st.subheader("2. สมดุลของโมเมนต์ (Moment Equilibrium)")
-    st.markdown("ผลรวมของโมเมนต์ที่เกิดจากแรงต้านของเสาเข็มแต่ละต้น ($P_i$) คูณด้วยระยะห่าง ($R_i$) จะต้องเท่ากับโมเมนต์ลัพธ์ภายนอก ($M_R$)")
-    st.markdown(r"$$ \sum P_i \cdot R_i = M_R $$")
-    st.markdown(r"$$ P_1 \cdot R_1 + P_2 \cdot R_2 + \dots + P_n \cdot R_n = M_R $$")
-    
-    st.subheader("3. สมมติฐานฐานรากแข็งเกร็ง (Compatibility Condition)")
-    st.markdown("เมื่อฐานรากแข็งเกร็ง แรงที่ตกกระทำบนเสาเข็มจะแปรผันตรงกับระยะห่างจากจุดศูนย์ถ่วง (CG)")
-    st.markdown(r"$$ \frac{P_1}{R_1} = \frac{P_2}{R_2} = \dots = \frac{P_n}{R_n} $$")
-    st.markdown("จัดรูปสมการเพื่อหาแรงของเสาเข็มต้นอื่นๆ ในรูปของ $P_1$:")
-    st.markdown(r"$$ P_2 = \frac{R_2}{R_1} \cdot P_1 $$")
-    st.markdown(r"$$ P_3 = \frac{R_3}{R_1} \cdot P_1 $$")
-    
-    st.subheader("4. แทนค่ากลับลงในสมการสมดุลโมเมนต์")
-    st.markdown(r"$$ P_1 \frac{R_1^2}{R_1} + P_1 \frac{R_2^2}{R_1} + P_1 \frac{R_3^2}{R_1} + \dots + P_1 \frac{R_n^2}{R_1} = M_R $$")
-    st.markdown(r"ดึงตัวร่วม $\frac{P_1}{R_1}$ ออกมา:")
-    st.markdown(r"$$ \frac{P_1}{R_1} \sum R_i^2 = M_R $$")
-    
-    st.subheader("5. สมการขั้นสุดท้าย (Final Equation)")
-    st.markdown("ย้ายข้างเพื่อหาแรงปฏิกิริยาของเสาเข็มต้นที่ 1 ($P_1$) จะได้ว่า:")
-    st.markdown(r"$$ P_1 = \frac{M_R \cdot R_1}{\sum R_i^2} $$")
+    st.subheader("3. Force-Displacement Relationship")
+    st.markdown("Since the piles act as linear springs with stiffness $k$, the reaction force $R_i$ at pile $i$ is proportional to its displacement:")
+    st.markdown(r"$$ R_i = k \cdot w_i = k(w_0 + \theta_x \cdot y_i + \theta_y \cdot x_i) $$")
+    st.markdown(r"$$ R_i = k w_0 + (k \theta_x) y_i + (k \theta_y) x_i \quad \text{--- (Eq. 1)} $$")
+
+    st.subheader("4. Global Static Equilibrium")
+    st.markdown("The internal pile reactions must perfectly balance the external applied forces and moments.")
+
+    st.markdown("#### A. Vertical Force Equilibrium ($\sum F_z = P_w$)")
+    st.markdown(r"$$ \sum R_i = P_w $$")
+    st.markdown(r"$$ \sum [k w_0 + (k \theta_x) y_i + (k \theta_y) x_i] = P_w $$")
+    st.markdown(r"Since $k w_0$ is constant, and $\sum y_i = 0$ and $\sum x_i = 0$ (because the origin is at the CG):")
+    st.markdown(r"$$ n \cdot (k w_0) + k \theta_x(0) + k \theta_y(0) = P_w $$")
+    st.markdown(r"$$ k w_0 = \frac{P_w}{n} \quad \text{--- (Eq. 2)} $$")
+
+    st.markdown("#### B. Moment Equilibrium about X-axis ($\sum M_x = M_{x,cg}$)")
+    st.markdown(r"$$ \sum (R_i \cdot y_i) = M_{x,cg} $$")
+    st.markdown(r"Substitute $R_i$ from Eq. 1:")
+    st.markdown(r"$$ \sum [k w_0 \cdot y_i + (k \theta_x) y_i^2 + (k \theta_y) x_i y_i] = M_{x,cg} $$")
+    st.markdown(r"Since $\sum y_i = 0$ and $\sum x_i y_i = 0$:")
+    st.markdown(r"$$ k w_0(0) + k \theta_x \sum y_i^2 + k \theta_y(0) = M_{x,cg} $$")
+    st.markdown(r"Let $I_{xx} = \sum y_i^2$ (Equivalent Moment of Inertia of the pile group about the X-axis):")
+    st.markdown(r"$$ k \theta_x \cdot I_{xx} = M_{x,cg} \implies k \theta_x = \frac{M_{x,cg}}{I_{xx}} \quad \text{--- (Eq. 3)} $$")
+
+    st.markdown("#### C. Moment Equilibrium about Y-axis ($\sum M_y = M_{y,cg}$)")
+    st.markdown(r"$$ \sum (R_i \cdot x_i) = M_{y,cg} $$")
+    st.markdown(r"Substitute $R_i$ from Eq. 1:")
+    st.markdown(r"$$ \sum [k w_0 \cdot x_i + (k \theta_x) x_i y_i + (k \theta_y) x_i^2] = M_{y,cg} $$")
+    st.markdown(r"Since $\sum x_i = 0$ and $\sum x_i y_i = 0$:")
+    st.markdown(r"$$ k w_0(0) + k \theta_x(0) + k \theta_y \sum x_i^2 = M_{y,cg} $$")
+    st.markdown(r"Let $I_{yy} = \sum x_i^2$ (Equivalent Moment of Inertia of the pile group about the Y-axis):")
+    st.markdown(r"$$ k \theta_y \cdot I_{yy} = M_{y,cg} \implies k \theta_y = \frac{M_{y,cg}}{I_{yy}} \quad \text{--- (Eq. 4)} $$")
+
+    st.subheader("5. Final Superposition Equation")
+    st.markdown("Substitute the solved displacement constants (Eq. 2, Eq. 3, and Eq. 4) back into the initial pile reaction equation (Eq. 1):")
+    st.markdown(r"$$ R_i = \underbrace{\frac{P_w}{n}}_{\text{Pure Axial Load}} + \underbrace{\frac{M_{x,cg} \cdot y_i}{I_{xx}}}_{\text{Bending about X-axis}} + \underbrace{\frac{M_{y,cg} \cdot x_i}{I_{yy}}}_{\text{Bending about Y-axis}} $$")
     
     st.divider()
-    
-    st.info(r"💡 **Note:** การหาโมเมนต์ที่เกิดจากแรงเยื้องศูนย์ (Eccentricity) คำนวณจาก $M_x = P_u \cdot \bar{y}$ และ $M_y = P_u \cdot \bar{x}$")
+    st.success("🎯 **Q.E.D. (Quod Erat Demonstrandum) - The biaxial bending pile reaction formula is successfully derived.**")
 
 
 # ==========================================
