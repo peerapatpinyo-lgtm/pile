@@ -90,61 +90,58 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     return pd.DataFrame(piles), summary
 
 # ==========================================
-# 2. Proof Tab Rendering Function (Detailed Version)
+# 2. Proof Tab Rendering Function (Whiteboard Version)
 # ==========================================
 def render_proof_tab():
-    st.header("📐 General Biaxial Bending Superposition (Rigid Cap Method)")
-    st.markdown("A comprehensive step-by-step mathematical proof deriving the pile reaction formula shown on the whiteboard, based on the **Rigid Pile Cap** assumption and **Static Equilibrium**.")
+    st.header("📐 EQUILIBRIUM ($P_w, M_x, M_y$) at CG")
+    
+    st.subheader("1. Equilibrium Equations")
+    st.markdown("$$ \sum F_z = P_w $$")
+    st.markdown("$$ \sum M_{x,cg} = M_{x,ext} + P_w \cdot e_y $$")
+    st.markdown("$$ \sum M_{y,cg} = M_{y,ext} + P_w \cdot e_x $$")
+    
+    st.markdown("**Eccentricity Definitions:**")
+    st.markdown("$$ e_x = CG_x - Col_x $$")
+    st.markdown("$$ e_y = CG_y - Col_y $$")
     
     st.divider()
 
-    st.subheader("Step 1: Eccentricity & Total Moments at CG")
-    st.markdown("First, we define the origin of our coordinate system at the **Center of Gravity (CG)** of the pile group. By definition, $\sum x_i=0$ and $\sum y_i=0$.")
-    st.markdown("External loads applied at the column must be translated to the pile cap's CG, which introduces eccentricities ($e_x,e_y$):")
-    st.markdown(r"$$e_x=CG_x-Col_x$$")
-    st.markdown(r"$$e_y=CG_y-Col_y$$")
-    st.markdown("The total moments acting at the CG ($M_{x,cg},M_{y,cg}$) are the sum of external moments and the moments caused by load eccentricity:")
-    st.markdown(r"$$\sum M_{x,cg}=M_{x,ext}+P_w\cdot e_y$$")
-    st.markdown(r"$$\sum M_{y,cg}=M_{y,ext}+P_w\cdot e_x$$")
-
-    st.subheader("Step 2: Rigid Cap Compatibility & Hooke's Law")
-    st.markdown("Assuming the pile cap is perfectly rigid, it remains planar even when rotating. The vertical displacement ($w_i$) of any pile is strictly proportional to its distance ($d_i$) from the axis of rotation:")
-    st.markdown(r"$$\frac{w_1}{d_1}=\frac{w_2}{d_2}=\text{constant}$$")
-    st.markdown("Assuming all piles act as identical elastic springs with stiffness $k$, the reaction force $R_i$ is proportional to its displacement ($R_i=k\cdot w_i$). Therefore, the force on any pile is also proportional to its distance from the neutral axis.")
-
-    st.subheader("Step 3: Deriving the Axial Contribution")
-    st.markdown("For pure vertical equilibrium ($\sum F_z=P_w$), we assume the load is applied exactly at the CG without any moments. The rigid cap settles uniformly.")
-    st.markdown("Let $R_{axial}$ be the uniform force on each pile. For $n$ piles:")
-    st.markdown(r"$$\sum R_{axial}=P_w$$")
-    st.markdown(r"$$n\cdot R_{axial}=P_w \implies R_{axial}=\frac{P_w}{n}$$")
-
-    st.subheader("Step 4: Deriving the Bending Contributions (X & Y Axes)")
-    st.markdown("For bending about the X-axis, the force on pile $i$ ($R_{bend,x}$) is proportional to its $y$-distance from the X-axis ($y_i$). Let $c$ be a proportionality constant:")
-    st.markdown(r"$$R_{bend,x}=c\cdot y_i$$")
-    st.markdown("Apply moment equilibrium about the X-axis ($\sum M_x=M_{x,cg}$):")
-    st.markdown(r"$$\sum(R_{bend,x}\cdot y_i)=M_{x,cg}$$")
-    st.markdown(r"$$\sum((c\cdot y_i)\cdot y_i)=M_{x,cg} \implies c\sum y_i^2=M_{x,cg}$$")
-    st.markdown("We define the **Pile Group Moment of Inertia** about the X-axis as $I_{xx}=\sum y_i^2$. Substituting this back:")
-    st.markdown(r"$$c\cdot I_{xx}=M_{x,cg} \implies c=\frac{M_{x,cg}}{I_{xx}}$$")
-    st.markdown("Thus, the localized bending force due to $M_{x,cg}$ is:")
-    st.markdown(r"$$R_{bend,x}=\frac{M_{x,cg}\cdot y_i}{I_{xx}}$$")
-    st.markdown("Following the exact same logic for the Y-axis ($I_{yy}=\sum x_i^2$), the localized bending force due to $M_{y,cg}$ is:")
-    st.markdown(r"$$R_{bend,y}=\frac{M_{y,cg}\cdot x_i}{I_{yy}}$$")
-
-    st.subheader("Step 5: General Biaxial Bending Superposition")
-    st.markdown("According to the principle of superposition, the total reaction force $R_i$ on any pile $i$ is the algebraic sum of the axial contribution and the biaxial bending contributions.")
-    
-    st.info(r"💡 $R_i=(\text{Axial Contribution})+(\text{Bending Contrib. X})+(\text{Bending Contrib. Y})$")
-    
-    st.markdown(r"$$R_i=\frac{P_w}{n}+\frac{M_{x,cg}\cdot y_i}{I_{xx}}+\frac{M_{y,cg}\cdot x_i}{I_{yy}}$$")
+    st.subheader("2. Rigid Cap Compatibility")
+    st.markdown("Based on the rigid cap assumption (rotation $\theta_x, \theta_y$ and displacement $w_i$), the displacement-to-distance ratio remains constant:")
+    st.markdown("$$ \frac{w_1}{d_1} = \frac{w_2}{d_2} = \text{constant} $$")
     
     st.divider()
-    st.markdown("**Variable Definitions:**")
-    st.markdown("- $P_w$: Total Working Axial Load")
-    st.markdown("- $n$: Total Number of Piles")
-    st.markdown("- $M_{x,cg},M_{y,cg}$: Net Moments about the shifted CG (X and Y axes)")
-    st.markdown("- $x_i,y_i$: Local coordinates of pile $i$ relative to the new CG")
-    st.markdown("- $I_{xx},I_{yy}$: Moment of Inertia of the pile group ($\sum y_i^2$ and $\sum x_i^2$)")
+
+    st.subheader("3. General Biaxial Bending Superposition (Rigid Cap Method)")
+    st.markdown("$$ R_i = (\text{Axial Contribution}) + (\text{Bending Contrib. X}) + (\text{Bending Contrib. Y}) $$")
+    
+    st.success("🎯 **Final Pile Reaction Formula:**")
+    st.markdown("$$ R_i = \frac{P_w}{n} + \frac{M_{x,cg} \cdot y_i}{I_{xx}} + \frac{M_{y,cg} \cdot x_i}{I_{yy}} $$")
+    
+    st.markdown("""
+    * **Axial Compression:** $\frac{P_w}{n}$
+    * **Bending about X-axis CG:** $\frac{M_{x,cg} \cdot y_i}{I_{xx}}$
+    * **Bending about Y-axis CG:** $\frac{M_{y,cg} \cdot x_i}{I_{yy}}$
+    """)
+
+    st.divider()
+
+    st.subheader("Variable Definitions")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("""
+        * **$P_w$**: Working Axial Load
+        * **$n$**: Number of Piles
+        * **$M_{x,cg}$**: CG Moment about X-axis
+        * **$y_i$**: Pile distance from X-axis CG
+        * **$I_{xx}$**: Pile Group Inertia ($I_{xx} = \sum y_i^2$)
+        """)
+    with col2:
+        st.markdown("""
+        * **$M_{y,cg}$**: CG Moment about Y-axis
+        * **$x_i$**: Pile distance from Y-axis CG
+        * **$I_{yy}$**: Pile Group Inertia ($I_{yy} = \sum x_i^2$)
+        """)
 
 
 # ==========================================
