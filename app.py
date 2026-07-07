@@ -88,14 +88,13 @@ def calculate_pile_deviation(pw, mx_ext, my_ext, q_main, q_micro, fs, min_spacin
     }
     
     return pd.DataFrame(piles), summary
-
 import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.patches import FancyArrowPatch
 
 # ==========================================
-# 2. Proof Tab Rendering Function (Ultra-Compact & Refined Vectors)
+# 2. Proof Tab Rendering Function (Micro Scale)
 # ==========================================
 def render_proof_tab():
     st.header("📐 Rigid Pile Cap: Rigorous Vector Derivation")
@@ -106,7 +105,7 @@ def render_proof_tab():
     # --- STEP 1 ---
     st.subheader("Step 1: Coordinate Setup & Eccentricity at CG")
     
-    col1, col2 = st.columns([1.1, 1.2]) 
+    col1, col2 = st.columns([1.2, 1.0]) 
     
     with col1:
         st.markdown("Let the origin $(0,0)$ be located at the **Center of Gravity (CG)** of the pile group, meaning $\\sum x_i = 0$ and $\\sum y_i = 0$.")
@@ -125,87 +124,74 @@ def render_proof_tab():
 
     with col2:
         # --- Figure 1: Geometric Mapping & Equivalent Forces ---
-        # ปรับขนาดรูปให้เล็กสุดๆ
-        fig1, ax1 = plt.subplots(figsize=(4.2, 4.2))
+        # ปรับขนาดรูปลงเหลือ 3.2 x 3.2
+        fig1, ax1 = plt.subplots(figsize=(3.2, 3.2))
 
-        # 1. วาดฐานราก (Pile Cap)
-        cap = patches.Rectangle((-2.5, -2.5), 5.0, 5.0, linewidth=1.5, edgecolor='#2c3e50', facecolor='#f8f9fa', zorder=1)
+        cap = patches.Rectangle((-2.5, -2.5), 5.0, 5.0, linewidth=1, edgecolor='#2c3e50', facecolor='#f8f9fa', zorder=1)
         ax1.add_patch(cap)
 
-        # 2. แกนหลัก (Axes)
-        ax1.axhline(0, color='black', linewidth=1.2, zorder=2)
-        ax1.axvline(0, color='black', linewidth=1.2, zorder=2)
-        ax1.text(2.3, 0.1, 'X', fontsize=9, fontweight='bold')
-        ax1.text(0.1, 2.3, 'Y', fontsize=9, fontweight='bold')
+        ax1.axhline(0, color='black', linewidth=1, zorder=2)
+        ax1.axvline(0, color='black', linewidth=1, zorder=2)
+        ax1.text(2.3, 0.1, 'X', fontsize=8, fontweight='bold')
+        ax1.text(0.1, 2.3, 'Y', fontsize=8, fontweight='bold')
 
-        # พิกัด
         piles_x = [1.5, -1.5, -1.5, 1.5]
         piles_y = [1.5, 1.5, -1.5, -1.5]
         cg_x, cg_y = 0, 0
         col_x, col_y = -0.8, 1.2
 
-        # 3. วาดเสาเข็ม
         for i, (px, py) in enumerate(zip(piles_x, piles_y)):
-            pile = patches.Circle((px, py), 0.25, linewidth=1.2, edgecolor='#34495e', facecolor='#bdc3c7', zorder=3)
+            pile = patches.Circle((px, py), 0.25, linewidth=1, edgecolor='#34495e', facecolor='#bdc3c7', zorder=3)
             ax1.add_patch(pile)
             bbox_props = dict(boxstyle="round,pad=0.1", fc="white", ec="gray", alpha=0.9)
-            ax1.text(px, py - 0.45, f'Pile {i+1}\n($x_{i+1}, y_{i+1}$)', ha='center', va='top', fontsize=7, bbox=bbox_props, zorder=4)
+            ax1.text(px, py - 0.45, f'Pile {i+1}', ha='center', va='top', fontsize=6, bbox=bbox_props, zorder=4)
 
-        # 4. วาดจุดเสาและแรง (Column Load Pw)
-        col = patches.Rectangle((col_x - 0.2, col_y - 0.2), 0.4, 0.4, linewidth=1.5, edgecolor='black', facecolor='#f1c40f', zorder=5)
+        col = patches.Rectangle((col_x - 0.2, col_y - 0.2), 0.4, 0.4, linewidth=1, edgecolor='black', facecolor='#f1c40f', zorder=5)
         ax1.add_patch(col)
-        ax1.plot(col_x, col_y, marker='x', color='black', markersize=6, markeredgewidth=1.5, zorder=6)
-        ax1.text(col_x, col_y - 0.35, r'$P_w$', ha='center', fontsize=9, fontweight='bold', color='#d35400', zorder=6)
+        ax1.plot(col_x, col_y, marker='x', color='black', markersize=4, markeredgewidth=1, zorder=6)
+        ax1.text(col_x, col_y - 0.35, r'$P_w$', ha='center', fontsize=7, fontweight='bold', color='#d35400', zorder=6)
 
-        # *** วาด M_x,ext และ M_y,ext ***
         mx_ext_arrow = FancyArrowPatch((col_x + 0.25, col_y + 0.15), (col_x + 0.25, col_y - 0.15), 
-                                       connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=3,head_length=3", 
-                                       color='#8e44ad', lw=1, zorder=6)
+                                       connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=2.5,head_length=2.5", 
+                                       color='#8e44ad', lw=0.8, zorder=6)
         ax1.add_patch(mx_ext_arrow)
-        ax1.text(col_x + 0.35, col_y, r'$\vec{M}_{x,ext}$', color='#8e44ad', fontsize=8, fontweight='bold', va='center')
+        ax1.text(col_x + 0.35, col_y, r'$\vec{M}_{x,ext}$', color='#8e44ad', fontsize=7, fontweight='bold', va='center')
 
         my_ext_arrow = FancyArrowPatch((col_x - 0.15, col_y + 0.25), (col_x + 0.15, col_y + 0.25), 
-                                       connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=3,head_length=3", 
-                                       color='#2980b9', lw=1, zorder=6)
+                                       connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=2.5,head_length=2.5", 
+                                       color='#2980b9', lw=0.8, zorder=6)
         ax1.add_patch(my_ext_arrow)
-        ax1.text(col_x, col_y + 0.35, r'$\vec{M}_{y,ext}$', color='#2980b9', fontsize=8, fontweight='bold', ha='center')
+        ax1.text(col_x, col_y + 0.35, r'$\vec{M}_{y,ext}$', color='#2980b9', fontsize=7, fontweight='bold', ha='center')
 
-        # 5. จุดศูนย์ถ่วง (CG)
-        ax1.plot(cg_x, cg_y, marker='o', color='#e74c3c', markersize=7, zorder=5)
-        ax1.plot(cg_x, cg_y, marker='x', color='black', markersize=4, zorder=6)
-        ax1.text(0.1, -0.25, r'CG', color='#c0392b', fontsize=8, fontweight='bold', zorder=6)
+        ax1.plot(cg_x, cg_y, marker='o', color='#e74c3c', markersize=5, zorder=5)
+        ax1.plot(cg_x, cg_y, marker='x', color='black', markersize=3, zorder=6)
+        ax1.text(0.1, -0.25, 'CG', color='#c0392b', fontsize=7, fontweight='bold', zorder=6)
 
-        # 6. เส้นบอกระยะเยื้องศูนย์ (Eccentricity + Colx/Coly)
         dim_bbox = dict(boxstyle="round,pad=0.1", fc="white", ec="none", alpha=0.8)
-        ax1.annotate('', xy=(col_x, 0), xytext=(0, 0), arrowprops=dict(arrowstyle='<->', color='#27ae60', lw=1.2), zorder=6)
-        ax1.text(col_x / 2, 0.1, r'$Col_x\ (e_x)$', color='#27ae60', fontsize=8, ha='center', va='bottom', fontweight='bold', bbox=dim_bbox, zorder=7)
+        ax1.annotate('', xy=(col_x, 0), xytext=(0, 0), arrowprops=dict(arrowstyle='<->', color='#27ae60', lw=1), zorder=6)
+        ax1.text(col_x / 2, 0.1, r'$e_x$', color='#27ae60', fontsize=7, ha='center', va='bottom', fontweight='bold', bbox=dim_bbox, zorder=7)
         
-        ax1.annotate('', xy=(col_x, col_y), xytext=(col_x, 0), arrowprops=dict(arrowstyle='<->', color='#e67e22', lw=1.2), zorder=6)
-        ax1.text(col_x - 0.1, col_y / 2, r'$Col_y\ (e_y)$', color='#d35400', fontsize=8, ha='right', va='center', fontweight='bold', bbox=dim_bbox, zorder=7)
+        ax1.annotate('', xy=(col_x, col_y), xytext=(col_x, 0), arrowprops=dict(arrowstyle='<->', color='#e67e22', lw=1), zorder=6)
+        ax1.text(col_x - 0.1, col_y / 2, r'$e_y$', color='#d35400', fontsize=7, ha='right', va='center', fontweight='bold', bbox=dim_bbox, zorder=7)
         
-        ax1.plot([col_x, col_x], [0, col_y], color='gray', linestyle='--', linewidth=0.8, zorder=2)
-        ax1.plot([0, col_x], [col_y, col_y], color='gray', linestyle='--', linewidth=0.8, zorder=2)
+        ax1.plot([col_x, col_x], [0, col_y], color='gray', linestyle='--', linewidth=0.5, zorder=2)
+        ax1.plot([0, col_x], [col_y, col_y], color='gray', linestyle='--', linewidth=0.5, zorder=2)
 
-        # 7. โมเมนต์รอบแกน X และ Y ที่ CG
-        mx_arrow = FancyArrowPatch((0.2, 0.3), (0.2, -0.3), connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=4,head_length=4", color='#e67e22', lw=1.2, zorder=6)
+        mx_arrow = FancyArrowPatch((0.2, 0.3), (0.2, -0.3), connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=3,head_length=3", color='#e67e22', lw=1, zorder=6)
         ax1.add_patch(mx_arrow)
-        ax1.text(0.4, 0, r'$\vec{M}_{x,cg}$', color='#d35400', fontsize=9, fontweight='bold', va='center')
+        ax1.text(0.4, 0, r'$\vec{M}_{x,cg}$', color='#d35400', fontsize=7, fontweight='bold', va='center')
 
-        my_arrow = FancyArrowPatch((-0.3, 0.2), (0.3, 0.2), connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=4,head_length=4", color='#2980b9', lw=1.2, zorder=6)
+        my_arrow = FancyArrowPatch((-0.3, 0.2), (0.3, 0.2), connectionstyle="arc3,rad=.5", arrowstyle="simple,head_width=3,head_length=3", color='#2980b9', lw=1, zorder=6)
         ax1.add_patch(my_arrow)
-        ax1.text(0, 0.4, r'$\vec{M}_{y,cg}$', color='#2980b9', fontsize=9, fontweight='bold', ha='center')
-
-        # สมการสรุปในรูป (กัน ValueError)
-        ax1.text(-2.4, -2.4, r'$M_{x,cg} = M_{x,ext} + (P_w \cdot e_y)$', fontsize=8, color='#c0392b', fontweight='bold', bbox=dict(facecolor='white', alpha=0.9, edgecolor='#e74c3c'), zorder=8)
+        ax1.text(0, 0.4, r'$\vec{M}_{y,cg}$', color='#2980b9', fontsize=7, fontweight='bold', ha='center')
 
         ax1.set_aspect('equal')
         ax1.set_xlim(-2.6, 2.6)
         ax1.set_ylim(-2.6, 2.6)
-        ax1.set_title('1) Top View: Equivalent Force & Moments', fontsize=10, fontweight='bold', pad=8)
+        ax1.set_title('1) Top View: Equivalent Actions', fontsize=8, fontweight='bold', pad=5)
         ax1.grid(True, linestyle=':', alpha=0.5)
         ax1.axis('off')
 
-        # บังคับไม่ให้ Streamlit ขยายภาพเต็มความกว้าง
         st.pyplot(fig1, use_container_width=False)
 
     st.divider()
@@ -213,7 +199,7 @@ def render_proof_tab():
     # --- STEP 2 ---
     st.subheader("Step 2: Vector Kinematics (Rigid Cap Compatibility)")
     
-    col3, col4 = st.columns([1.1, 1.2])
+    col3, col4 = st.columns([1.2, 1.0])
 
     with col3:
         st.markdown("According to the rigid pile cap assumption, the cap does not deform internally; it only translates vertically by $w_0$ and rotates as a rigid plane. We define the rotation vector $\\vec{\\theta}$ about the CG as:")
@@ -229,39 +215,40 @@ def render_proof_tab():
 
     with col4:
         # --- Figure 2: Vector Components ---
-        fig2, ax2 = plt.subplots(figsize=(4.2, 4.2))
+        # ปรับขนาดรูปลงเหลือ 3.2 x 3.2
+        fig2, ax2 = plt.subplots(figsize=(3.2, 3.2))
 
-        ax2.axhline(0, color='black', linewidth=1.2, zorder=2)
-        ax2.axvline(0, color='black', linewidth=1.2, zorder=2)
-        ax2.text(2.4, 0.1, 'X', fontsize=9, fontweight='bold')
-        ax2.text(0.1, 2.4, 'Y', fontsize=9, fontweight='bold')
+        ax2.axhline(0, color='black', linewidth=1, zorder=2)
+        ax2.axvline(0, color='black', linewidth=1, zorder=2)
+        ax2.text(2.4, 0.1, 'X', fontsize=8, fontweight='bold')
+        ax2.text(0.1, 2.4, 'Y', fontsize=8, fontweight='bold')
 
         px, py = 1.8, 1.3
-        pile_i = patches.Circle((px, py), 0.25, linewidth=1.2, edgecolor='#34495e', facecolor='#bdc3c7', zorder=3)
+        pile_i = patches.Circle((px, py), 0.25, linewidth=1, edgecolor='#34495e', facecolor='#bdc3c7', zorder=3)
         ax2.add_patch(pile_i)
-        ax2.text(px, py + 0.35, 'Pile $i$', ha='center', fontsize=9, fontweight='bold', bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="gray", alpha=0.9))
+        ax2.text(px, py + 0.35, 'Pile $i$', ha='center', fontsize=7, fontweight='bold', bbox=dict(boxstyle="round,pad=0.1", fc="white", ec="gray", alpha=0.9))
 
-        ax2.annotate('', xy=(px, py), xytext=(0,0), arrowprops=dict(arrowstyle='-|>', color='#2980b9', lw=2, mutation_scale=15), zorder=4)
-        ax2.text(px/2 - 0.2, py/2 + 0.2, r'$\vec{r}_i$', color='#2980b9', fontsize=11, fontweight='bold', bbox=dict(boxstyle="circle,pad=0.1", fc="white", ec="none", alpha=0.8))
+        ax2.annotate('', xy=(px, py), xytext=(0,0), arrowprops=dict(arrowstyle='-|>', color='#2980b9', lw=1.5, mutation_scale=10), zorder=4)
+        ax2.text(px/2 - 0.2, py/2 + 0.2, r'$\vec{r}_i$', color='#2980b9', fontsize=9, fontweight='bold', bbox=dict(boxstyle="circle,pad=0.1", fc="white", ec="none", alpha=0.8))
         
-        ax2.annotate('', xy=(px, 0), xytext=(0,0), arrowprops=dict(arrowstyle='->', color='#3498db', lw=1.5, ls='--'), zorder=3)
-        ax2.annotate('', xy=(px, py), xytext=(px,0), arrowprops=dict(arrowstyle='->', color='#3498db', lw=1.5, ls='--'), zorder=3)
-        ax2.text(px/2, -0.2, r'$x_i \hat{i}$', color='#2980b9', fontsize=9, ha='center', fontweight='bold')
-        ax2.text(px + 0.15, py/2, r'$y_i \hat{j}$', color='#2980b9', fontsize=9, va='center', fontweight='bold')
+        ax2.annotate('', xy=(px, 0), xytext=(0,0), arrowprops=dict(arrowstyle='->', color='#3498db', lw=1, ls='--'), zorder=3)
+        ax2.annotate('', xy=(px, py), xytext=(px,0), arrowprops=dict(arrowstyle='->', color='#3498db', lw=1, ls='--'), zorder=3)
+        ax2.text(px/2, -0.2, r'$x_i \hat{i}$', color='#2980b9', fontsize=7, ha='center', fontweight='bold')
+        ax2.text(px + 0.15, py/2, r'$y_i \hat{j}$', color='#2980b9', fontsize=7, va='center', fontweight='bold')
 
         tx, ty = 0.8, 1.8
-        ax2.annotate('', xy=(tx, ty), xytext=(0,0), arrowprops=dict(arrowstyle='-|>', color='#c0392b', lw=2, mutation_scale=15), zorder=4)
-        ax2.text(tx/2 - 0.3, ty/2 + 0.1, r'$\vec{\theta}$', color='#c0392b', fontsize=11, fontweight='bold', bbox=dict(boxstyle="circle,pad=0.1", fc="white", ec="none", alpha=0.8))
+        ax2.annotate('', xy=(tx, ty), xytext=(0,0), arrowprops=dict(arrowstyle='-|>', color='#c0392b', lw=1.5, mutation_scale=10), zorder=4)
+        ax2.text(tx/2 - 0.2, ty/2 + 0.1, r'$\vec{\theta}$', color='#c0392b', fontsize=9, fontweight='bold', bbox=dict(boxstyle="circle,pad=0.1", fc="white", ec="none", alpha=0.8))
         
-        ax2.annotate('', xy=(tx, 0), xytext=(0,0), arrowprops=dict(arrowstyle='->', color='#e74c3c', lw=1.5, ls='-.'), zorder=3)
-        ax2.annotate('', xy=(0, ty), xytext=(0,0), arrowprops=dict(arrowstyle='->', color='#e74c3c', lw=1.5, ls='-.'), zorder=3)
-        ax2.text(tx/2, 0.15, r'$\theta_x \hat{i}$', color='#c0392b', fontsize=9, ha='center', fontweight='bold')
-        ax2.text(0.15, ty/2, r'$\theta_y \hat{j}$', color='#c0392b', fontsize=9, va='center', fontweight='bold')
+        ax2.annotate('', xy=(tx, 0), xytext=(0,0), arrowprops=dict(arrowstyle='->', color='#e74c3c', lw=1, ls='-.'), zorder=3)
+        ax2.annotate('', xy=(0, ty), xytext=(0,0), arrowprops=dict(arrowstyle='->', color='#e74c3c', lw=1, ls='-.'), zorder=3)
+        ax2.text(tx/2, 0.15, r'$\theta_x \hat{i}$', color='#c0392b', fontsize=7, ha='center', fontweight='bold')
+        ax2.text(0.15, ty/2, r'$\theta_y \hat{j}$', color='#c0392b', fontsize=7, va='center', fontweight='bold')
 
         ax2.set_aspect('equal')
         ax2.set_xlim(-0.5, 2.6)
         ax2.set_ylim(-0.5, 2.6)
-        ax2.set_title('2) Position & Rotation Vectors', fontsize=10, fontweight='bold', pad=8)
+        ax2.set_title('2) Position & Rotation Vectors', fontsize=8, fontweight='bold', pad=5)
         ax2.grid(True, linestyle=':', alpha=0.5)
         ax2.axis('off')
 
@@ -292,7 +279,7 @@ def render_proof_tab():
     st.markdown(r"$$ M_{x,cg}\hat{i} + M_{y,cg}\hat{j} = \sum (R_i y_i)\hat{i} - \sum (R_i x_i)\hat{j} $$")
     
     st.markdown("By equating the orthogonal vector components, we obtain two scalar equations:")
-    st.markdown(r"$$ M_{x,cg} = \sum R_i y_i \quad \text{and} \quad M_{y,cg} = -\sum R_i x_i $$")
+    st.markdown(r"$$ M_{x,cg} = \sum (R_i y_i) \quad \text{and} \quad M_{y,cg} = -\sum (R_i x_i) $$")
 
     st.subheader("Step 5: Solving for Bending Stiffness Constants")
     st.markdown("Substitute the general expression for $R_i$ (Eq. 1) into the scalar moment equations, assuming principal axes of symmetry ($\sum x_i y_i = 0$):")
